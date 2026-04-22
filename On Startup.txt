@@ -1,0 +1,2 @@
+1. Open Docker
+2. docker start cfb-pg
