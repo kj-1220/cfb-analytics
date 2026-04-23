@@ -1,0 +1,15 @@
+version: 2
+
+sources:
+  - name: raw
+    schema: raw
+    tables:
+      - name: games
+      - name: teams
+      - name: venues
+      - name: sp_ratings
+      - name: recruiting
+      - name: odds
+      - name: team_stats
+      - name: advanced_stats
+      - name: plays
