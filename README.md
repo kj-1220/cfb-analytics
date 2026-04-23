@@ -1,120 +1,136 @@
 # CFB Analytics Platform
 
-An AI-powered college football analytics platform built on a warehouse-first, medallion architecture. The platform generates win probabilities, spread predictions, and AI-authored match previews by combining a Bayesian hierarchical model with Claude as an interpretation layer.
+An AI-powered college football analytics and betting research platform. Combines a calibrated Bayesian hierarchical model with Claude as a reasoning layer to produce win probabilities, spread predictions, and AI-authored match previews for every FBS game.
 
-**Live target:** Liberty vs Coastal Carolina — September 24, 2026 (first Sun Belt conference play Saturday)
+**Live target:** September 24, 2026 — Liberty vs Coastal Carolina (Sun Belt conference opener)  
+**CBB parallel track:** January 3, 2027 — first P6 conference play Saturday
+
+> Claude never predicts. It reasons over outputs the statistical model has already produced.
 
 ---
 
-## What It Does
+## What This Does
 
-- Ingests structured CFB data from multiple sources into a Postgres data warehouse
+- Ingests structured CFB data from multiple APIs into a Postgres warehouse
 - Cleans and conforms raw data through a dbt silver layer
-- Builds a wide feature table ready for exploratory data analysis and model training
-- Runs a three-level Bayesian hierarchical model to produce win probability, spread, and moneyline outputs
-- Serves predictions and qualitative context to Claude via a FastAPI backend
-- Claude reasons over model outputs — it never predicts directly
+- Builds mart tables and a certified semantic layer for model consumption
+- Runs a three-level Bayesian hierarchical model producing win probability, spread, moneyline, and full score distributions via Monte Carlo simulation
+- Maintains a RAG vector corpus of game narratives, conference identity profiles, environmental records, and coaching scheme history
+- Serves model outputs and qualitative context to Claude via a FastAPI tool-use interface
+- Claude reasons over predictions and RAG chunks to generate match previews, probability explanations, and conference context
+- Displays everything in a React frontend built for game-day betting research
 
 ---
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                        DATA SOURCES                             │
-│  collegefootballdata.com  │  The Odds API  │  247Sports/Rivals  │
-│  SP+ / ESPN FPI           │  PFF+ (manual export, RAG only)     │
-└───────────────────────────┬─────────────────────────────────────┘
-                            │
-                            ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                     BRONZE LAYER  (schema: raw)                 │
-│  raw.games        │  raw.teams         │  raw.venues            │
-│  raw.sp_ratings   │  raw.recruiting    │  raw.odds              │
-│  raw.team_stats   │  raw.advanced_stats│  raw.plays             │
-│                                                                 │
-│  Source-native. Minimal transformation. Append-only.           │
-└───────────────────────────┬─────────────────────────────────────┘
-                            │  dbt
-                            ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                     SILVER LAYER  (schemas: stg, int)           │
-│                                                                 │
-│  STAGING (stg) — one view per raw table                        │
-│  stg.stg_games          Clean types, parse start_date          │
-│  stg.stg_teams          FBS only, location + timezone          │
-│  stg.stg_venues         Elevation meters → feet, lat/lon       │
-│  stg.stg_sp_ratings     SP+ composite + unit ratings           │
-│  stg.stg_recruiting     Class composites, typed                │
-│  stg.stg_advanced_stats snake_case, EPA + havoc features       │
-│  stg.stg_team_stats     Box score stats + derived metrics      │
-│                                                                 │
-│  INTERMEDIATE (int) — wide join table                          │
-│  int.int_team_season_features                                  │
-│    One row per FBS team per season (2022–2025)                 │
-│    ~552 rows │ all candidate features │ EDA input              │
-└───────────────────────────┬─────────────────────────────────────┘
-                            │  EDA → feature selection
-                            ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                      GOLD LAYER  (schemas: mart, semantic)      │
-│                                                                 │
-│  MART TABLES                                                    │
-│  mart.team_features      Selected + engineered features        │
-│  mart.upcoming_games     Schedule with context                 │
-│  mart.historical_games   Results with feature snapshots        │
-│  mart.predictions        Model outputs (written by Bayesian)   │
-│  mart.conf_standings     Live conference standings             │
-│                                                                 │
-│  SEMANTIC LAYER — certified metric definitions                 │
-│  rolling_epa_diff  │  form_score      │  travel_index          │
-│  conf_strength     │  recruiting_composite                     │
-│  (Claude reads these — never computes them)                    │
-└──────────┬────────────────────────────┬────────────────────────┘
-           │                            │
-           ▼                            ▼
-┌──────────────────────┐    ┌───────────────────────────────────┐
-│   BAYESIAN MODEL     │    │         RAG CORPUS                │
-│   (Python / PyMC)    │    │   schema: rag  │  pgvector        │
-│                      │    │                                   │
-│  3-level hierarchy:  │    │  PFF+ grade summaries             │
-│  league → conf → team│    │  Conference style profiles        │
-│                      │    │  Scheme + coaching tendencies     │
-│  Priors:             │    │  Rivalry history                  │
-│  roster_strength_index    │  Environmental records            │
-│  = SP+ preseason     │    │  Glossary                         │
-│  + recruiting 3yr avg│    │                                   │
-│  + transfer portal   │    │  (same Postgres instance,         │
-│  + NIL proxy         │    │   no separate vector DB)          │
-│                      │    └───────────────────┬───────────────┘
-│  Adjusters:          │                        │
-│  elevation, travel,  │                        │
-│  timezone, kickoff   │                        │
-│                      │                        │
-│  Outputs → Monte Carlo                        │
-│  win prob │ spread   │                        │
-│  moneyline           │                        │
-└──────────┬───────────┘                        │
-           │                                    │
-           └──────────────┬─────────────────────┘
-                          ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                      FASTAPI BACKEND                            │
-│                                                                 │
-│  Claude tools:                                                  │
-│  get_metric()   get_prediction()   retrieve_knowledge()        │
-│  get_conf_context()                                             │
-│                                                                 │
-│  Claude never predicts. It reasons over outputs.               │
-└───────────────────────────┬─────────────────────────────────────┘
-                            │
-                            ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                      REACT FRONTEND                             │
-│  Conference dashboard  │  Team profiles  │  Matchup page       │
-│  Season outlook        │  AI analyst chat│  Metric explorer    │
-│  CFP tracker                                                    │
-└─────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│                          RAW DATA SOURCES                            │
+│  CFBD API            │  The Odds API     │  SP+ / ESPN FPI           │
+│  Games, stats, plays │  Live lines       │  Rating priors            │
+│  247Sports / Rivals  │  PFF+ (manual)    │                           │
+│  Recruiting composites│  RAG corpus only │                           │
+└──────────────────────────────────┬───────────────────────────────────┘
+                                   │
+                                   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│                    BRONZE LAYER  (schema: raw)                       │
+│  Append-only. Source-native. Minimal transformation.                 │
+│                                                                      │
+│  raw.games (14,744)      raw.teams (1,902)    raw.venues (840)       │
+│  raw.sp_ratings (538)    raw.recruiting (1,184) raw.odds (20+)       │
+│  raw.team_stats (534)    raw.advanced_stats (552)                    │
+│  raw.plays (1,073,640)                                               │
+└──────────────────────────────────┬───────────────────────────────────┘
+                                   │  dbt run
+                                   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│                    SILVER LAYER  (schemas: stg, int)                 │
+│                                                                      │
+│  STAGING VIEWS (stg) — one per raw table                            │
+│  stg_games · stg_teams · stg_venues · stg_sp_ratings                │
+│  stg_recruiting · stg_advanced_stats · stg_team_stats                │
+│                                                                      │
+│  INTERMEDIATE TABLE (int)                                            │
+│  int_team_season_features — 552 rows                                 │
+│  One row per FBS team per season (2022–2025)                         │
+│  All candidate features present — EDA input, nothing dropped         │
+└──────────────────────────────────┬───────────────────────────────────┘
+                                   │  EDA → feature selection
+                                   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│                    GOLD LAYER  (schemas: mart, semantic)             │
+│                                                                      │
+│  MART TABLES                                                         │
+│  mart.team_features        Selected + engineered features            │
+│  mart.upcoming_games       Schedule with venue and odds context      │
+│  mart.historical_games     Results with feature snapshots at game time│
+│  mart.predictions          Model outputs (written by Bayesian model) │
+│  mart.conf_standings       Standings + conference race projections   │
+│                                                                      │
+│  SEMANTIC LAYER — certified metric definitions                       │
+│  rolling_epa_diff  ·  form_score  ·  travel_index                   │
+│  conf_strength  ·  recruiting_composite                              │
+│  Claude reads these. Never computes them.                            │
+└──────────┬───────────────────────────────────┬───────────────────────┘
+           │                                   │
+           ▼                                   ▼
+┌─────────────────────────┐       ┌────────────────────────────────────┐
+│   BAYESIAN MODEL        │       │   RAG CORPUS (schema: rag)         │
+│   Python / PyMC         │       │   pgvector — same Postgres instance│
+│                         │       │                                    │
+│   3-level hierarchy:    │       │   Game narratives                  │
+│   league → conf → team  │       │   Box scores · drive write-ups     │
+│                         │       │   Rivalry history · ATS context    │
+│   Priors seeded from    │       │                                    │
+│   roster_strength_index:│       │   Conference identity              │
+│   SP+ preseason rating  │       │   Tempo profiles · run/pass tend.  │
+│   3-yr recruiting avg   │       │   Cross-conf matchup logs          │
+│   Transfer portal net   │       │                                    │
+│   NIL proxy             │       │   Environmental records            │
+│                         │       │   High-altitude logs · travel dist │
+│   Environmental adjusters       │   Weather outcomes · night/day     │
+│   Elevation · Travel    │       │                                    │
+│   Timezone · Kickoff    │       │   Coaching + scheme history        │
+│                         │       │   Career records · scheme tags     │
+│   Hierarchical Poisson  │       │   4th down tendencies · portal     │
+│   + Monte Carlo (10k)   │       │                                    │
+│                         │       │   Claude queries 3–5 chunks        │
+│   → win prob            │       │   per matchup + context query      │
+│   → predicted spread    │       │   Metadata filters: season,        │
+│   → moneyline           │       │   conference, venue type           │
+│   → score distribution  │       │                                    │
+└──────────┬──────────────┘       └───────────────────┬────────────────┘
+           │                                          │
+           └──────────────────┬───────────────────────┘
+                              ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│                         FASTAPI BACKEND                              │
+│                                                                      │
+│  Claude tools:                                                       │
+│  get_metric()  ·  get_prediction()  ·  retrieve_knowledge()         │
+│  get_conf_context()                                                  │
+│                                                                      │
+│  Endpoints:                                                          │
+│  GET  /predict        GET  /preview       GET  /explain              │
+│  GET  /metrics/team   GET  /metrics/matchup                          │
+│  GET  /conference     GET  /schedule      GET  /standings            │
+│  POST /ask                                                           │
+└──────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│                        REACT FRONTEND                                │
+│                                                                      │
+│  Matchup page       — win prob · spread · score dist · AI preview   │
+│  Schedule view      — all games, sorted by model vs market edge      │
+│  Conference dashboard — standings · EPA leaderboard · projections    │
+│  Team profile       — metrics · trends · recruiting · schedule       │
+│  Season outlook     — CFP tracker · conference race                  │
+│  AI analyst chat    — freeform questions via POST /ask               │
+│  Model info         — validation metrics · methodology · freshness   │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -123,74 +139,62 @@ An AI-powered college football analytics platform built on a warehouse-first, me
 
 | Source | What It Provides | Method |
 |---|---|---|
-| [collegefootballdata.com](https://collegefootballdata.com) | Games, teams, venues, advanced stats, plays, team stats, recruiting | REST API |
+| [collegefootballdata.com](https://collegefootballdata.com) | Games, teams, venues, plays, team stats, advanced stats, recruiting, SP+ | REST API |
 | [The Odds API](https://the-odds-api.com) | Live lines from 5 bookmakers | REST API |
-| SP+ / ESPN FPI | Composite + unit ratings 2022–2025 | CFBD API |
-| 247Sports / Rivals | Recruiting class composites 2020–2025 | CFBD API |
+| SP+ / ESPN FPI | Composite + unit ratings 2022–2025 | Via CFBD API |
+| 247Sports / Rivals | Recruiting class composites 2020–2025 | Via CFBD API |
 | PFF+ | Player grade summaries | Manual export — RAG corpus only |
-
----
-
-## Bronze Layer — Raw Tables
-
-| Table | Rows | Contents |
-|---|---|---|
-| `raw.games` | 14,744 | Game results 2022–2025 |
-| `raw.teams` | 1,902 | All classifications — FBS/FCS/DII/DIII |
-| `raw.venues` | 840 | Elevation, lat/lon, capacity, dome status |
-| `raw.sp_ratings` | 538 | SP+ composite + unit ratings 2022–2025 |
-| `raw.recruiting` | 1,184 | 247Sports composite class scores 2020–2025 |
-| `raw.odds` | 20 | Live lines from The Odds API, 5 bookmakers |
-| `raw.team_stats` | 534 | 63 box score categories per team per season |
-| `raw.advanced_stats` | 552 | 68 EPA/efficiency features, offense + defense |
-| `raw.plays` | 1,073,640 | Every snap 2022–2025 with PPA, week-by-week |
-
----
-
-## Silver Layer — dbt Models
-
-### Staging Views (`stg` schema)
-One view per raw table. Type casting, renaming, filtering, and simple derivations only.
-
-| Model | Key Transformations |
-|---|---|
-| `stg_games` | Cast types, parse `start_date`, filter to completed games |
-| `stg_teams` | Filter to FBS only (`classification = 'fbs'`), keep location + timezone |
-| `stg_venues` | Convert elevation meters → feet, carry lat/lon |
-| `stg_sp_ratings` | Clean cast of composite + unit ratings |
-| `stg_recruiting` | Clean cast, 3-year rolling average computed upstream in `int` |
-| `stg_advanced_stats` | Rename all columns to snake_case, EPA + havoc features |
-| `stg_team_stats` | Null-safe casts, derive `completion_pct`, `yards_per_attempt`, `third_down_pct`, `fourth_down_pct` |
-
-### Intermediate Table (`int` schema)
-| Model | Description |
-|---|---|
-| `int_team_season_features` | Wide join — one row per FBS team per season. All candidate features present. EDA input. Drop nothing. |
+| On3 | NIL player valuations (NIL proxy) | Scrape — roster_strength_index component |
 
 ---
 
 ## Bayesian Model
 
-Three-level hierarchical model: **league → conference → team**
+**Architecture:** Three-level hierarchy — league → conference → team  
+**Likelihood:** Hierarchical Poisson scoring model  
+**Simulation:** 10,000 Monte Carlo draws per game  
 
-**Roster Strength Index** (team prior seed):
-- SP+ preseason rating
-- 3-year recruiting composite (247Sports)
-- Transfer portal net (quality-weighted)
-- NIL valuation proxy (On3)
+### Roster Strength Index (team prior seed)
+Four-component composite:
+1. SP+ preseason rating
+2. 3-year recruiting composite (247Sports)
+3. Transfer portal net (quality-weighted, from CFBD API)
+4. NIL valuation proxy (On3 player valuations)
 
-**Environmental adjusters:**
-- Elevation (feet above sea level)
-- Travel distance (miles)
-- Timezone shift (hours)
-- Kickoff time (west-coast teams at noon ET)
+### Environmental Adjusters
+All four enter as multiplicative terms on the team scoring rate:
 
-**Outputs via hierarchical Poisson scoring + Monte Carlo simulation:**
-- Win probability
-- Spread
-- Moneyline
+| Adjuster | Implementation |
+|---|---|
+| Elevation | Log-linear effect of venue elevation (ft). Affects teams playing above 5,000 ft. |
+| Travel distance | Haversine distance between city centroids. Threshold: >1,000 miles. |
+| Timezone shift | Hours of timezone difference × kickoff time penalty. Asymmetric (west coast noon ET is worst case). |
+| Kickoff time | Day/night, weekday/Saturday splits. |
 
-Model reads from `mart.team_features`, writes predictions to `mart.predictions`.
+### Outputs
+Every game gets a full posterior distribution, not just a point estimate:
+- Win probability (home and away)
+- Predicted spread (median of score differential posterior)
+- Moneyline (converted from win probability with standard vig)
+- Score distribution (full histogram stored as JSONB in `mart.predictions`)
+
+### Validation Benchmark
+The model is measured against the Vegas closing line — not against naive baselines. Beating the closing line on ATS record is the standard for edge.
+
+---
+
+## RAG Corpus
+
+Four document categories chunked, embedded (`text-embedding-3-small`), and stored in `rag.documents` with pgvector:
+
+| Category | Contents | Source |
+|---|---|---|
+| Game narratives | Box score summaries, drive write-ups, rivalry history, upset context ATS | Auto-generated from raw.games + raw.plays |
+| Conference identity | Tempo profiles, run/pass tendencies, cross-conf matchup logs, neutral site records | Auto-generated from raw.advanced_stats |
+| Environmental records | High-altitude logs, travel distance records, weather outcomes, night/day splits | Auto-generated from venue + game join |
+| Coaching + scheme | Career records, scheme tags (4-2-5, Air Raid, etc.), 4th down tendencies, portal impact | Manually curated |
+
+Claude queries the vector store with two query types per matchup — a matchup query ("Team A vs Team B history") and a context query ("Sun Belt at altitude, 2022–25") — plus metadata filters on season, conference, and venue type. Claude retrieves 3–5 chunks and reasons over them alongside model outputs. It never predicts from the chunks alone.
 
 ---
 
@@ -198,47 +202,105 @@ Model reads from `mart.team_features`, writes predictions to `mart.predictions`.
 
 | Layer | Technology |
 |---|---|
-| Database | PostgreSQL 15 (Docker, port 5455) |
+| Database | PostgreSQL 15 (Docker local / managed production) |
+| Vector search | pgvector (same Postgres instance — no separate vector DB) |
 | Transformation | dbt (postgres adapter) |
-| Modeling | Python / PyMC (Bayesian) |
-| Vector search | pgvector (same Postgres instance) |
+| Bayesian model | Python / PyMC |
+| Embedding | text-embedding-3-small (OpenAI) |
 | Backend | FastAPI |
-| LLM | Claude (Anthropic) |
-| Frontend | React |
+| LLM | Claude (Anthropic) via tool use |
+| Frontend | React + Vite + Tailwind + recharts |
+| Deployment | Railway (API + cron) · Vercel (frontend) |
+
+---
+
+## Weekly ETL Pipeline
+
+Runs every Sunday at 6am throughout the CFB season:
+
+1. Pull new game results from CFBD API → upsert `raw.games`
+2. `dbt run` → refresh silver and gold layers
+3. `run_predictions()` → generate Monte Carlo predictions for all games in next 14 days → write to `mart.predictions`
+4. Generate new game narratives → embed → write to `rag.documents`
+5. Refresh odds → `raw.odds` → `mart.upcoming_games`
+6. Healthcheck: validate row counts, prediction coverage, data freshness
 
 ---
 
 ## Local Setup
 
-**Prerequisites:** Docker Desktop, Python 3.11+, dbt-postgres
+**Prerequisites:** Docker Desktop, Python 3.11+, Node 18+, dbt-postgres
 
 ```bash
-# Clone the repo
+# Clone
 git clone https://github.com/kj-1220/cfb-analytics.git
 cd cfb-analytics
 
-# Start the database
+# Start database
 docker start cfb-pg
 
-# Install Python dependencies
+# Python dependencies
 pip install -r requirements.txt
 
-# Copy environment variables
+# Environment variables
 cp .env.example .env
-# Add CFBD_API_KEY and ODDS_API_KEY to .env
+# Add: CFBD_API_KEY, ODDS_API_KEY, ANTHROPIC_API_KEY
 
 # Run dbt
 cd cfb_analytics
 dbt debug
 dbt run
+
+# Verify silver layer
+psql "host=127.0.0.1 port=5455 dbname=postgres user=postgres password=postgres" \
+  -c "select team_name, season, sp_rating, epa_differential from int.int_team_season_features where team_name in ('Liberty', 'Coastal Carolina') order by team_name, season;"
 ```
 
+---
+
+## Project Status
+
+| Phase | Description | Status |
+|---|---|---|
+| 1 | Infrastructure — Docker, Postgres, dbt, GitHub | ✅ Complete |
+| 2 | Bronze layer — 9 raw tables, 1M+ rows | ✅ Complete |
+| 3 | Silver layer — 7 staging views + int_team_season_features | ✅ Complete |
+| 4 | EDA — feature correlation and selection | 🔲 Next |
+| 5 | Gold layer — mart tables + semantic layer | 🔲 |
+| 6 | Bayesian model — hierarchical Poisson + Monte Carlo | 🔲 |
+| 7 | RAG corpus — pgvector + 4 document categories | 🔲 |
+| 8 | Claude integration — tool use + prompt engineering + eval | 🔲 |
+| 9 | FastAPI backend — all endpoints + auth | 🔲 |
+| 10 | React frontend — matchup page + dashboard + chat | 🔲 |
+| 11 | Weekly ETL pipeline — automated season refresh | 🔲 |
+| 12 | Integration testing + hardening | 🔲 |
+| 13 | Production deployment | 🔲 |
+| **Live** | **Liberty vs Coastal Carolina** | **Sept 24, 2026** |
+
+**Realistic completion for a production-ready system: late July to mid-August 2026.**
+
+---
+
+## College Basketball Parallel Track
+
+Same infrastructure. Same Postgres. Same dbt. Same FastAPI. Same React frontend. Sport-prefixed schemas (`cbb_`).
+
+- **Target:** January 3, 2027 — first P6 conference play Saturday
+- **Scope:** Big Ten, SEC, Big 12, ACC, Big East
+- **V1 model:** Dixon-Coles adapted for CBB with Barttorvik ratings as strength input
+- **V2 model:** Gaussian Process team strength estimator → Dixon-Coles (handles trajectory and momentum)
+- **Data:** Barttorvik manual daily pulls — one snapshot per conference game day
 
 ---
 
 ## Key Design Principles
 
-- **Claude never predicts.** It reasons over outputs the statistical model and semantic layer have already produced. If a metric isn't defined in the semantic layer, it doesn't exist as far as Claude is concerned.
-- **One database.** pgvector lives inside the same Postgres instance — no separate vector database. One connection string, simpler ops.
-- **Keep every feature until EDA.** `int_team_season_features` is the EDA input table. Nothing is dropped until feature selection.
-- **Bronze is immutable.** Raw tables are append-only source data. All transformation happens in silver and above.
+**Claude never predicts.** It reasons over outputs the statistical model has already produced. If a metric isn't defined in the semantic layer, it doesn't exist as far as Claude is concerned. Claude only states probabilities returned by `get_prediction()`.
+
+**One database.** pgvector lives in the same Postgres instance. One connection string. No separate vector DB. Simpler ops.
+
+**Bronze is immutable.** Raw tables are append-only. All transformation happens in silver and above. Never alter or truncate a raw table.
+
+**The closing line is the benchmark.** A model that beats a coin flip is not impressive. A model with a positive ATS record against closing lines has edge. That is the standard.
+
+**Keep every feature until EDA.** `int_team_season_features` is the EDA input table. Nothing is dropped until feature selection is complete and documented.
