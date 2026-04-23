@@ -233,21 +233,6 @@ dbt debug
 dbt run
 ```
 
----
-
-## Project Status
-
-| Day | Goal | Status |
-|---|---|---|
-| Day 1 | Infra setup — Docker, Postgres, dbt, GitHub | ✅ Complete |
-| Day 2 | Bronze layer — all 9 raw tables populated | ✅ Complete |
-| Day 3 | Silver layer — 7 staging views + `int_team_season_features` | ✅ Complete |
-| Day 4 | EDA — feature correlation, selection for Bayesian model | 🔲 Upcoming |
-| Day 5 | Gold layer — mart tables + semantic layer | 🔲 Upcoming |
-| Day 6 | Bayesian model build + Monte Carlo | 🔲 Upcoming |
-| Day 7 | FastAPI backend + Claude integration | 🔲 Upcoming |
-| Day 8 | React frontend | 🔲 Upcoming |
-| **Live** | **Liberty vs Coastal Carolina** | **Sept 24, 2026** |
 
 ---
 
