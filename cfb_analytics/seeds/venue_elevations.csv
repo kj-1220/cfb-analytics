@@ -1,0 +1,435 @@
+venue_id,venue_name,elevation_feet
+150,Jack Coffey Field,56.7
+538,StubHub Center,22.1
+980,Benedetti-Wehrli Stadium,681.5
+3494,The Dome at America's Center,466.1
+3600,Tom Adams Field,598.7
+3606,Scheels Field at Nemzek Stadium,906.1
+3611,Alumni Field (MA),907.6
+3612,Alumni Memorial Stadium (NC),766.5
+3614,Alumni Stadium (IN),783.8
+3618,Apprentice Field,27.3
+3621,Arnold Field (PA),413.6
+3633,Ben Altamirano Field,5902.3
+3635,Bill Buxton Stadium,967.6
+3638,MDU Resources Community Bowl,1694.2
+3640,Blackstock Stadium,841.6
+3641,Blakeslee Stadium,833.2
+3642,Bobcat Stadium (MD),2063.1
+3645,Bolstorff Field,1267.5
+3659,Bulldog Stadium (NE),1528.6
+3663,Burke-Tarr Stadium,1202.2
+3667,Callaghan Stadium,2437.1
+3675,Charles A. Gaetano Stadium,454.4
+3677,Chuck Noll Field,1017.8
+3678,City Stadium (VA),634.9
+3684,Citrus Stadium,608.6
+3690,Charles L. Currier Memorial Field,522.7
+3698,Donnell Stadium,758.9
+3702,Durham County Memorial Stadium,399.7
+3703,Durham County Stadium,361.6
+3705,Earl Kitchings Stadium,15.5
+3709,Hempstead Stadium,28.5
+3717,Edwin Fauver Stadium,491.2
+3718,Tom Benson Hall of Fame Stadium,1054.3
+3723,QU Stadium,567.5
+3728,Terry Fox Field,340.4
+3729,"Frank ""Muddy"" Waters Stadium",1138.1
+3731,Frost-Kalnow Stadium,744.9
+3733,Garcelon Field,217.6
+3745,Greater Zion Stadium,2813.1
+3747,Hantz Stadium,630.3
+3749,Hunter Stadium,513.0
+3755,Ray and Sue Smith Stadium,606.2
+3760,Hubert Jack Stadium,560.5
+3767,Indian Bowl,617.6
+3769,Jack Britt Memorial Stadium,676.0
+3770,Jack Miller Stadium,1073.4
+3794,Korb Field,958.9
+3800,Larry Wilcox Stadium,1072.1
+3804,Legions Field (FL),146.3
+3807,Lincoln Park Stadium,208.3
+3808,Lincoln University Stadium,516.6
+3813,"Luther ""Nick"" Jeralds Stadium",100.6
+3818,Malosky Stadium,931.8
+3819,Bowditch Field,162.2
+3823,Hardee-McGee Field,1911.6
+3827,"Memorial Stadium (Stephenville, TX)",1299.1
+3837,"Memorial Stadium (Selma, AL)",138.6
+3843,MLC Bowl,893.2
+3859,Offutt Field,1031.8
+3860,O'Harra Stadium,3226.5
+3869,Palmetto Ridge High School,4.0
+3870,Panther Stadium (OH),759.3
+3871,General Charles C. Krulak Stadium,609.3
+3875,Paul Laird Field,650.4
+3877,Pioneer Stadium,1761.3
+3880,Priest Field,764.2
+3885,Harvey Randall Wickes Memorial Stadium,11.6
+3901,Robert E. Williams Field,831.1
+3904,Rogers Stadium (VA),67.2
+3915,Charles Lee Field at Samford Stadium,235.9
+3920,Schmidt Stadium,981.3
+3922,Kenneth R. Gill Stadium,719.8
+3927,Sherman Field,1236.0
+3934,Southern Nazarene University Football Stadium,1310.5
+3938,Sports Complex (OH),556.1
+3939,St. Vincent Health Field,719.3
+3943,Stillman Stadium,227.5
+3945,Strong Stadium,750.7
+3951,Swisher Field,1301.6
+3957,Tiger Stadium (AL),154.6
+3960,Top Taggart Field,927.9
+3995,Dr. John W. Winkin Sports Complex,115.4
+4015,Barron Stadium,620.7
+4103,Tiger Stadium (MO),769.3
+4110,A.J. McClung Stadium,239.1
+4134,Salem Stadium,1068.9
+4205,Petco Park,49.9
+4221,Target Field,839.7
+4250,Wrigley Field,594.1
+4420,Florida Tech Panther Stadium,21.1
+4421,Multi-Sport Performance Stadium,1304.0
+4422,Valhalla Stadium,616.6
+4423,Young-Wise Memorial Stadium,415.4
+4425,Southwestern Field House,754.2
+4426,Matador Stadium,528.3
+4427,John A. Farrell Stadium,458.9
+4428,Saxon Stadium,651.2
+4429,Seth Grove Stadium,653.3
+4430,Mihalik-Thompson Stadium,1298.9
+4431,Chryst Field at Biemesderfer Stadium,319.7
+4432,Andre Reed Stadium,422.8
+4433,George P. Miller Stadium,1309.8
+4435,Robert B. Redman Stadium,539.3
+4436,Adamson Stadium,797.0
+4437,"Memorial Stadium (Clarion, PA)",1489.4
+4438,O'Shields-Stevenson Stadium,253.5
+4439,Eiler-Martin Stadium,426.3
+4440,Sox Harrison Stadium,1210.3
+4463,Crusader Stadium,514.4
+4580,Bulldawg Stadium,1088.4
+4583,Razorback Stadium (Texarkana),329.1
+4724,Audrey J. Walton Stadium at Vernon Kennedy Field,845.2
+4749,McPherson Memorial Stadium,934.7
+4751,Mewbourne Stadium,540.1
+4753,Greene Stadium,885.7
+4762,Memorial Stadium (Commerce TX),542.6
+4763,Ranger Field,1351.6
+4851,Bazemore-Hyder Stadium,221.4
+4852,Neta and Eddie DeRose ThunderBowl,4693.2
+4853,Scott D. Miller Stadium,28.5
+4854,Perkins Stadium,810.9
+4855,Leslie C. Quick Jr. Stadium,13.5
+4856,Mount Union Stadium,1159.3
+5113,Ruggles Field at Carpenter-Haygood Stadium,244.4
+5114,Shelton Stadium,1741.0
+5115,McCully Stadium,749.0
+5116,O'Shaughnessy Stadium,765.5
+5117,Clemens Stadium,1093.8
+5119,Maxwell Field,159.2
+5120,J.J. Keller Field at Titan Stadium,767.3
+5121,University of Charleston Stadium,596.9
+5123,Little Giant Stadium,773.2
+5124,Homewood Field,22.5
+5125,Stadium Red Field,82.0
+5127,Gene L. Shirk Stadium,249.0
+5133,Ram Stadium (WV),401.0
+5134,Bearcat Stadium,1151.8
+5403,Orlando City Stadium,18.0
+5636,Wright Stadium,1112.0
+5637,Vendetti Field,630.7
+5638,Dave Wolk Stadium,438.6
+5689,Seaverns Field At Harold Alfond Stadium,112.6
+5780,Altra Federal Credit Union Stadium,1228.3
+5781,Irwin Belk Stadium,566.2
+5782,Mountaineer Bowl,9992.5
+5783,McArthur Field,202.4
+5784,Cebe Ross Field,1423.1
+5785,Dickerson Stadium,617.0
+5786,Sprankle-Sprandel Stadium,952.6
+5787,Docking Stadium,774.6
+5788,Merrill Field at Yunevich Stadium,1761.3
+5789,Frank B. Fuhrer Field,1096.7
+5790,Bahlke Field,734.1
+5791,Turf Field,249.0
+5792,Pratt Field at Lehrman Stadium,180.1
+5793,Macholtz Stadium,880.1
+5794,Caparso Field,1056.8
+5796,Charles D. Lindberg Stadium,583.5
+5797,Vago Field,619.3
+5798,Jerry E. Apple Stadium,3521.7
+5799,Daly Field at Frank R. Campbell Stadium,506.7
+5800,Jopson Athletic Complex,1181.2
+5801,George Finnie Stadium,753.4
+5802,Belhaven Bowl Stadium,288.0
+5803,Bison Stadium,846.6
+5804,Royal Stadium,937.7
+5805,Alumni Field (OH),836.8
+5806,Whittier Field,64.7
+5807,Brevard Memorial Stadium,2225.5
+5808,Edward C. Swenson Athletic Complex,88.3
+5809,J. Leslie Rollins Stadium,1435.3
+5810,Coyer Field,601.6
+5811,William Rolland Stadium,889.8
+5812,Bernlohr Stadium,793.1
+5813,Klein Field at Manitou,903.0
+5814,Gesling Stadium,843.7
+5815,Schneider Stadium,811.4
+5816,Art Keller Field,602.5
+5817,Ron and Joyce Schipper Stadium,890.6
+5818,Farris Stadium,983.4
+5819,Ernie Chapman Stadium,121.7
+5820,Amos Alonzo Stagg Field,594.1
+5821,Fritz B. Burns Stadium,1169.3
+5822,Cadet Memorial Field,60.0
+5823,Clark Field,731.3
+5824,Lions Stadium,155.0
+5825,Jake Christiansen Stadium,906.1
+5826,Concordia Stadium,627.5
+5827,Tomasini Stadium,667.7
+5828,Van Metre Field at Ash Park,883.5
+5830,Walter M. Katz Field,116.6
+5831,Dale Lippert Field,835.8
+5832,Justin F. Coressel Stadium,675.7
+5833,Robert A. Lipinski Field at James Work Memorial Stadium,285.0
+5834,Deeds Field-Piper Stadium,958.0
+5835,Biddle Field,474.2
+5836,Chalmers Field,622.8
+5838,Ornelas Stadium,410.9
+5839,Langhorst Field,687.2
+5840,Fred Selfe Stadium at Nicewonder Field,1066.3
+5841,Pete FioRito Stadium at McKinzie Field,767.6
+5842,Robert T. Shields Field,252.7
+5843,W.B. Adams Stadium,1428.5
+5844,McAfee Field,697.2
+5845,Elliot Field Athletic Complex,659.2
+5847,Sponaugle-Williamson Field,357.9
+5848,Hotchkiss Field,22.9
+5849,Reeves Field (PA),799.1
+5850,Stoffer Family Stadium,181.0
+5851,Shirk Field at Musselman Stadium,536.8
+5852,Jamieson Stadium,823.2
+5853,Francis Field (IL),622.6
+5855,Charles A. Henry Field,1250.1
+5856,Boswell Field at David J. Urick Stadium,454.3
+5857,Gordon Wood Stadium,1362.6
+5858,England Stadium,614.4
+5859,Tucci Stadium,825.5
+5860,Mapleleaf Athletic Complex,733.7
+5861,Rosenbloom Field,1020.5
+5862,Butterfield Stadium,412.9
+5863,Don Shula Stadium at Wasmer Field,1026.2
+5864,Robert E. Thorn Field,1270.3
+5866,Rex Stadium,7530.9
+5867,Albany State University Coliseum,202.6
+5868,Ronald J. Abdow Field,65.0
+5869,LeGrand Stadium at 1st Community Credit Union Field,1847.4
+5870,Thone Stadium at Buerkle Field,347.7
+5871,Convoy Leslie Cotton Boll Stadium,297.6
+5872,Kirkeby-Over Stadium,1434.7
+5873,Bulldogs Stadium,126.8
+5874,Chet Anderson Stadium,1356.7
+5875,Charlie W. Johnson Stadium,305.6
+5876,Bentley University Football Stadium,63.2
+5877,Lyle Hare Stadium,3642.5
+5878,Wantland Stadium,1211.9
+5879,Tomlinson Stadium,1544.2
+5880,Elliott Field at Don Beebe Stadium,3374.8
+5881,CAU Panther Stadium,1019.1
+5882,Ralph Stocker Stadium,4588.7
+5883,Marv Kay Stadium at Campbell Field,5676.6
+5884,Buffalo Stadium,3540.5
+5885,First Security Stadium,892.3
+5886,West Family Stadium,662.8
+5887,I.L. & Sue Morris Stadium,727.6
+5888,University Stadium (GA),1091.6
+5889,Carpenter-Haygood Stadium,244.4
+5890,Lewis Field Stadium,2024.4
+5891,Wilkins Stadium,336.6
+5892,Armfield Athletic Center,823.2
+5893,Hollingsworth Field,768.6
+5894,Steuben Field,1193.0
+5895,Klas Field,765.5
+5896,Lewis C. Everett Stadium,315.2
+5897,Francis Field (MO),466.1
+5898,John Coughlin Memorial Field,484.6
+5899,"Alumni Stadium (Worcester, MA)",484.6
+5900,Don and Nona Williams Stadium,881.9
+5901,David Smith Stadium at Ramer Field,865.5
+5902,Knox Stadium,632.6
+5903,Community Stadium at Goerke Park,1085.9
+5904,Angell Field,786.1
+5905,Kean Alumni Stadium,103.1
+5906,McBride Field,1078.2
+5907,McCarthy Stadium (Wilkes Barre),751.7
+5908,Harley Knosher Bowl,771.8
+5909,Ortmayer Stadium,1059.4
+5910,Callaway Stadium,785.0
+5911,Ralph E. Davis Pioneer Stadium,981.7
+5913,Warrior Field at Raabe Stadium,662.0
+5914,Veterans Memorial Stadium (WI),671.0
+5915,Farwell Field,685.9
+5916,Carson Park,789.2
+5917,Ratliff Stadium,2898.0
+5918,Taylor Field,844.7
+5919,Ron Roberts Field at the Banta Bowl,786.8
+5920,Griswold Stadium,33.9
+5921,Rock Bowl,622.8
+5922,Wildcat Field,119.9
+5923,Legacy Field in Carlson Stadium,880.2
+5925,David Person Field,546.8
+5926,Henry G. Steinbrenner '27 Stadium,21.1
+5927,Freesen Field,614.4
+5928,Macalester Stadium,765.5
+5929,Ritchie Field,86.0
+5930,Carl W. Burt Memorial Stadium,771.5
+5931,Don Drumm Stadium,609.0
+5932,Lloyd L. Thornton Stadium,935.5
+5933,Sea Foam Stadium,765.5
+5934,Farmers Insurance Athletic Complex,919.6
+5935,Parker Field at McCool Stadium,140.1
+5936,Koi Ishto Stadium,1012.8
+5938,Al Whitehead Field at Greyhound Stadium,4006.6
+5939,Cressy Field,72.8
+5940,Clean Harbors Stadium,8.7
+5941,Roebuck Stadium,6.0
+5942,Francis G. Welch Stadium,1147.5
+5943,Duvall-Rosier Field,989.3
+5944,Ray Dennison Memorial Field,6796.7
+5945,Wildcat Stadium (GA),519.7
+5996,Wilford Moore Stadium,1741.0
+5997,Brooks Stadium (NY),27.3
+6027,Albert J. H. Sloan - Alumni Stadium,568.3
+6030,Harms-Eischeid Stadium,1092.5
+6031,Urbana University Stadium,1051.6
+6032,Hovey Field,146.5
+6033,Carl Smith Stadium,2435.9
+6034,Yager Stadium at Moore Bowl,934.2
+6035,"Memorial Stadium (Wayne, NE)",1676.7
+6036,Blue Wahoos Stadium,54.9
+6041,Irwin Belk Complex,763.5
+6042,Alumni Stadium (KY),503.7
+6044,Lane Field,405.6
+6045,Dwight T. Reed Stadium,630.5
+6046,Meares Stadium,2322.6
+6047,Leemon Field,512.6
+6048,Duane Stadium,203.6
+6049,"Memorial Stadium (Wichita Falls, TX)",948.5
+6050,Ed Widseth Field,875.4
+6052,Herb Parker Stadium,1614.5
+6053,Robinson-Hale Stadium,356.0
+6054,Fred G. Hughes Stadium,1003.2
+6055,Craig Field at Spratt Memorial Stadium,892.9
+6057,Ron & Carol Cope Stadium at Foster Field,2171.2
+6058,Ralph F. DellaCamera Stadium,18.0
+6059,Sanchez Family Stadium,6425.8
+6060,Grace P. Johnson Stadium,170.8
+6061,Younts Stadium,999.4
+6062,Gable Field at Doc Wadley Stadium,797.1
+6064,Crain Family Stadium,1057.2
+6066,Pace Stadium,285.6
+6067,Carnie Smith Stadium,943.5
+6069,Husky Stadium,1036.8
+6070,Bob Young Field,1434.7
+6071,Jess Dow Field,22.3
+6072,Schwan Regional Event Center,1079.1
+6073,Milam Stadium,1655.9
+6074,Grappone Stadium,254.4
+6075,W.B. Mason Stadium,142.6
+6076,Javelina Stadium,58.0
+6077,Stokes Stadium,980.6
+6078,Pioneer Field (TN),1525.4
+6079,Alumni Stadium (VT),366.3
+6080,Frank M. Lindsay Field,681.3
+6081,Harper Davis Field,288.0
+6082,Big Cat Stadium,1131.3
+6083,Mangelsdorf Field,106.6
+6084,April Zorn Memorial Stadium,766.1
+6085,Sprague Field,312.1
+6086,Rocco Calvo Field,281.8
+6087,Drake Field (NY),1334.1
+6088,Schueler Field,556.1
+6089,Scotty Wood Stadium,362.6
+6090,Sherman Field at McConagha Stadium,869.3
+6091,Abel Stadium,1174.1
+6092,Bishop Stadium,108.3
+6094,Reynolds Field,956.2
+6095,Sabine Field at Haynes Family Stadium,724.9
+6096,Austin E. Knowlton Athletics Complex,811.0
+6097,Patterson Field at Jack Kemp Stadium,300.5
+6098,Dial-Roberson Stadium,760.9
+6099,Selby Stadium,868.8
+6100,Cutler Field,938.9
+6101,"Memorial Stadium (Westerville, OH)",864.2
+6102,Sparks Stadium,44.6
+6104,Baker Stadium,110.7
+6105,Day Field,218.9
+6106,Ted Runner Stadium,1360.1
+6107,ECAV Stadium,34.8
+6108,Crain Field,302.6
+6109,Ingalls Field,933.2
+6110,Sam Greeley Field,717.6
+6111,Cook Stadium,500.6
+6112,Richard Wackar Stadium,146.3
+6113,Leckonby Stadium,377.5
+6114,Sea Gull Stadium,24.3
+6115,Toppa Field,19.3
+6116,Shentel Stadium,704.3
+6117,Knight Stadium,831.1
+6118,Birkelbach Field,754.2
+6119,Stagg Field,65.0
+6121,Donald J. Schneider Stadium,611.4
+6123,Jackson Field,4484.2
+6124,Amos Alonzo Stagg Field (PA),445.6
+6126,Bob Boozer Field,518.6
+6127,John P. Papp Stadium,903.4
+6128,Alumni Stadium (PA),440.4
+6130,Fred Zollner Athletic Stadium,1066.4
+6131,Jessee/Miller Field,44.2
+6132,Trinity University Stadium,645.2
+6133,Ellis Oval at Zimman Field,14.4
+6134,Frank Bailey Field,240.9
+6135,Blue Storm Stadium,53.2
+6136,Patterson Field,151.4
+6137,Walston-Hoover Stadium,912.5
+6138,Wilson Field,1054.1
+6139,Cameron Stadium,137.1
+6140,John F. Wiley Stadium,966.2
+6141,Corwin Stadium,52.7
+6142,Westside Athletic Complex,399.6
+6144,"Alumni Field (Westfield, MA)",208.4
+6146,Memorial Field (PA),1051.6
+6147,"Memorial Stadium (Whittier, CA)",306.0
+6148,The Pine Bowl,1884.6
+6149,McCulloch Stadium,159.5
+6150,Wightman Stadium,295.9
+6151,Farley-Lamb Field,919.2
+6152,Wiliams Stadium (OH),1017.6
+6153,Hanson Stadium,208.3
+6177,Alexander Durley Sports Complex,49.2
+6202,Cardinal Stadium (DC),22.9
+6208,Sirrine Stadium,975.2
+6209,Henry Biesiot Activities Center,2412.5
+6211,Sodexo Field,1307.0
+6218,Garrett-Harrison Stadium,241.5
+6220,Trojan Stadium,1677.7
+6221,Mitchell Stadium,2568.5
+6222,Lumpkins Stadium,590.2
+6223,Lawrence Tech Athletic Field,684.4
+6231,Lucy Laney Stadium,140.6
+6241,Spirit Field,1210.1
+6269,Globe Life Field,604.6
+6283,A.J. Simeon Stadium,922.2
+6284,Village of Lisle-Benedictine University Sports Complex,676.1
+6501,Allegiant Stadium,2029.3
+6526,Hancock Whitney Stadium,8.6
+6553,Helen and Leonard Moretz Stadium,1162.4
+6577,SHI Stadium,75.4
+7003,Houck Field,401.0
+7065,SoFi Stadium,126.2
+7075,Electric Supply Company Field,110.1
+7076,J.W. Babb Stadium,663.0
+7082,Athletic Field Complex,886.0
+7185,"Memorial Stadium (El Dorado, AR)",262.3
+7232,Children's Health Stadium,756.3
