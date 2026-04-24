@@ -78,24 +78,56 @@ final as (
         sp.sp_rating, sp.sp_ranking, sp.sp_offense, sp.sp_defense,
         sp.sp_special_teams, sp.sp_offense_ranking, sp.sp_defense_ranking,
 
-        -- advanced / EPA
-        adv.off_epa_per_play, adv.off_passing_epa, adv.off_rushing_epa,
-        adv.def_epa_per_play, adv.def_passing_epa, adv.def_rushing_epa,
-        adv.off_success_rate, adv.def_success_rate,
+        -- offensive epa
+        adv.off_epa_per_play, adv.off_epa_total,
+        adv.off_passing_epa, adv.off_rushing_epa,
+
+        -- defensive epa
+        adv.def_epa_per_play, adv.def_epa_total,
+        adv.def_passing_epa, adv.def_rushing_epa,
+
+        -- epa differential
+        round(coalesce(adv.off_epa_per_play, 0) - coalesce(adv.def_epa_per_play, 0), 4) as epa_differential,
+
+        -- offensive success rates
+        adv.off_success_rate,
         adv.off_pass_success_rate, adv.off_rush_success_rate,
-        adv.def_pass_success_rate, adv.def_rush_success_rate,
-        adv.off_explosiveness, adv.def_explosiveness,
-        adv.off_power_success, adv.def_power_success,
-        adv.off_stuff_rate, adv.def_stuff_rate,
-        adv.off_line_yards, adv.def_line_yards,
-        adv.off_open_field_yards, adv.def_open_field_yards,
-        adv.off_pts_per_opp, adv.def_pts_per_opp,
-        adv.total_havoc, adv.front_seven_havoc, adv.db_havoc,
         adv.off_std_downs_success_rate, adv.off_pass_downs_success_rate,
+
+        -- defensive success rates
+        adv.def_success_rate,
+        adv.def_pass_success_rate, adv.def_rush_success_rate,
         adv.def_std_downs_success_rate, adv.def_pass_downs_success_rate,
 
-        -- EPA differential
-        round(coalesce(adv.off_epa_per_play, 0) - coalesce(adv.def_epa_per_play, 0), 4) as epa_differential,
+        -- offensive situational epa
+        adv.off_std_downs_epa, adv.off_pass_downs_epa,
+
+        -- defensive situational epa
+        adv.def_std_downs_epa, adv.def_pass_downs_epa,
+
+        -- explosiveness
+        adv.off_explosiveness, adv.def_explosiveness,
+
+        -- offensive rushing efficiency
+        adv.off_power_success, adv.off_stuff_rate,
+        adv.off_line_yards, adv.off_second_level_yards, adv.off_open_field_yards,
+
+        -- defensive rushing efficiency
+        adv.def_power_success, adv.def_stuff_rate,
+        adv.def_line_yards, adv.def_second_level_yards, adv.def_open_field_yards,
+
+        -- scoring opportunity efficiency
+        adv.off_pts_per_opp, adv.def_pts_per_opp,
+
+        -- field position
+        adv.off_field_position_avg_start, adv.def_field_position_avg_start,
+        adv.off_field_position_predicted_pts, adv.def_field_position_predicted_pts,
+
+        -- havoc (fixed: now correctly using def_havoc_*)
+        adv.def_havoc_total, adv.def_havoc_front_seven, adv.def_havoc_db,
+
+        -- volume
+        adv.off_plays, adv.off_drives, adv.def_plays, adv.def_drives,
 
         -- team stats
         ts.games_played                             as stat_games,
