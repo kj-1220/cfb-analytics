@@ -1,5 +1,4 @@
 version: 2
-
 sources:
   - name: raw
     schema: raw
@@ -13,3 +12,4 @@ sources:
       - name: team_stats
       - name: advanced_stats
       - name: plays
+      - name: game_weather

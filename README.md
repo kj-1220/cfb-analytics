@@ -41,7 +41,7 @@ An AI-powered college football analytics and betting research platform. Combines
 │  raw.games (14,744)      raw.teams (1,902)    raw.venues (840)       │
 │  raw.sp_ratings (538)    raw.recruiting (1,184) raw.odds (20+)       │
 │  raw.team_stats (534)    raw.advanced_stats (552)                    │
-│  raw.plays (1,073,640)                                               │
+│  raw.plays (1,073,640)   raw.game_weather (~14,282, ingesting)       │
 └──────────────────────────────────┬───────────────────────────────────┘
                                    │  dbt run
                                    ▼
@@ -51,11 +51,20 @@ An AI-powered college football analytics and betting research platform. Combines
 │  STAGING VIEWS (stg) — one per raw table                            │
 │  stg_games · stg_teams · stg_venues · stg_sp_ratings                │
 │  stg_recruiting · stg_advanced_stats · stg_team_stats                │
+│  stg_game_weather (Day 4)                                            │
 │                                                                      │
-│  INTERMEDIATE TABLE (int)                                            │
+│  INTERMEDIATE TABLES (int)                                           │
 │  int_team_season_features — 552 rows                                 │
 │  One row per FBS team per season (2022–2025)                         │
-│  All candidate features present — EDA input, nothing dropped         │
+│  Full offensive + defensive profile. EDA input, nothing dropped      │
+│                                                                      │
+│  int_team_season_context — 552 rows                                  │
+│  Derived ratios: pace, EPA differentials, havoc, turnovers,          │
+│  field position, penalties, scoring efficiency (off + def)           │
+│                                                                      │
+│  int_game_team_features — 29,472 rows                                │
+│  One row per team per game. Rolling off + def EPA, points,           │
+│  win pct (3-game windows), rest days, opp SP+ (prior year)          │
 └──────────────────────────────────┬───────────────────────────────────┘
                                    │  EDA → feature selection
                                    ▼
@@ -263,9 +272,11 @@ psql "host=127.0.0.1 port=5455 dbname=postgres user=postgres password=postgres" 
 | Phase | Description | Status |
 |---|---|---|
 | 1 | Infrastructure — Docker, Postgres, dbt, GitHub | ✅ Complete |
-| 2 | Bronze layer — 9 raw tables, 1M+ rows | ✅ Complete |
-| 3 | Silver layer — 7 staging views + int_team_season_features | ✅ Complete |
-| 4 | EDA — feature correlation and selection | 🔲 Next |
+| 2 | Bronze layer — 10 raw tables, 1M+ rows incl. game_weather | ✅ Complete |
+| 3 | Silver layer — 8 staging views + 3 int tables (552 + 552 + 29,472 rows) | ✅ Complete |
+| 3b | Defensive feature expansion — havoc bug fixed, field position investigated | ✅ Complete |
+| 4 | int_game_environment — elevation, travel, timezone, weather additions | 🔲 Next |
+| 4b | EDA — feature correlation and selection | 🔲 |
 | 5 | Gold layer — mart tables + semantic layer | 🔲 |
 | 6 | Bayesian model — hierarchical Poisson + Monte Carlo | 🔲 |
 | 7 | RAG corpus — pgvector + 4 document categories | 🔲 |
