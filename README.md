@@ -275,8 +275,8 @@ psql "host=127.0.0.1 port=5455 dbname=postgres user=postgres password=postgres" 
 | 2 | Bronze layer — 10 raw tables, 1M+ rows incl. game_weather | ✅ Complete |
 | 3 | Silver layer — 8 staging views + 3 int tables (552 + 552 + 29,472 rows) | ✅ Complete |
 | 3b | Defensive feature expansion — havoc bug fixed, field position investigated | ✅ Complete |
-| 4 | int_game_environment — elevation, travel, timezone, weather additions | 🔲 Next |
-| 4b | EDA — feature correlation and selection | 🔲 |
+| 4 | int_game_environment — elevation, travel, timezone, weather additions | ✅ Complete |
+| 4b | EDA — feature correlation and selection | 🔲 Next |
 | 5 | Gold layer — mart tables + semantic layer | 🔲 |
 | 6 | Bayesian model — hierarchical Poisson + Monte Carlo | 🔲 |
 | 7 | RAG corpus — pgvector + 4 document categories | 🔲 |
