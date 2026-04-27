@@ -1,0 +1,596 @@
+
+══════════════════════════════════════════════════════
+STG.STG_GAMES
+══════════════════════════════════════════════════════
+  game_id  | season | week | season_type |        start_date        | start_time_et | neutral_site | conference_game | attendance | venue_id |             venue_name              |   home_team    | home_conference | home_points |    away_team     | away_conference | away_points | game_year 
+-----------+--------+------+-------------+--------------------------+---------------+--------------+-----------------+------------+----------+-------------------------------------+----------------+-----------------+-------------+------------------+-----------------+-------------+-----------
+ 401693677 |   2024 |    1 | regular     | 2024-08-24T04:00:00.000Z | true          | t            | f               |            |          |                                     | Lincoln (CA)   | Independent DII |           7 | College of Idaho |                 |          45 |      2024
+ 401635525 |   2024 |    1 | regular     | 2024-08-24T16:00:00.000Z | false         | t            | t               |      47998 |     3504 | Aviva Stadium                       | Georgia Tech   | ACC             |          24 | Florida State    | ACC             |          21 |      2024
+ 401654665 |   2024 |    1 | regular     | 2024-08-24T19:30:00.000Z | false         | f            | f               |      16125 |     3827 | Memorial Stadium (Stephenville, TX) | Tarleton State | UAC             |          26 | McNeese          | Southland       |          23 |      2024
+(3 rows)
+
+--- columns ---
+   column_name   | data_type 
+-----------------+-----------
+ game_id         | bigint
+ season          | integer
+ week            | integer
+ season_type     | text
+ start_date      | text
+ start_time_et   | text
+ neutral_site    | boolean
+ conference_game | boolean
+ attendance      | integer
+ venue_id        | bigint
+ venue_name      | text
+ home_team       | text
+ home_conference | text
+ home_points     | integer
+ away_team       | text
+ away_conference | text
+ away_points     | integer
+ game_year       | integer
+(18 rows)
+
+
+══════════════════════════════════════════════════════
+STG.STG_TEAMS
+══════════════════════════════════════════════════════
+ team_id | team_name |    mascot    | abbreviation |  conference   | classification |       city       | state |  zip  | country | latitude  |  longitude  |     timezone     | primary_color | alt_color 
+---------+-----------+--------------+--------------+---------------+----------------+------------------+-------+-------+---------+-----------+-------------+------------------+---------------+-----------
+    2005 | Air Force | Falcons      | AF           | Mountain West | fbs            | Colorado Springs | CO    | 80840 |         | 38.996970 | -104.843617 | America/Denver   | #004a7b       | 
+    2006 | Akron     | Zips         | AKR          | Mid-American  | fbs            | Akron            | OH    | 44399 |         | 41.072553 |  -81.508341 | America/New_York | #00285e       | 
+     333 | Alabama   | Crimson Tide | ALA          | SEC           | fbs            | Tuscaloosa       | AL    | 35487 |         | 33.208275 |  -87.550384 | America/Chicago  | #9e1632       | 
+(3 rows)
+
+--- columns ---
+  column_name   | data_type 
+----------------+-----------
+ team_id        | integer
+ team_name      | text
+ mascot         | text
+ abbreviation   | text
+ conference     | text
+ classification | text
+ city           | text
+ state          | text
+ zip            | text
+ country        | text
+ latitude       | numeric
+ longitude      | numeric
+ timezone       | text
+ primary_color  | text
+ alt_color      | text
+(15 rows)
+
+
+══════════════════════════════════════════════════════
+STG.STG_VENUES
+══════════════════════════════════════════════════════
+ venue_id |     venue_name     |    city     | state | zip | country_code | elevation_meters | elevation_feet | latitude | longitude | capacity | grass | dome | timezone 
+----------+--------------------+-------------+-------+-----+--------------+------------------+----------------+----------+-----------+----------+-------+------+----------
+    11591 | Lokken Stadium     | Valley City | ND    |     |              |                  |                |          |           |          |       | f    | 
+     3884 | RAM Stadium        | East Point  | GA    |     |              |                  |                |          |           |          |       | f    | 
+    11589 | Hinchliffe Stadium | Paterson    | NJ    |     |              |                  |                |          |           |          |       | t    | 
+(3 rows)
+
+--- columns ---
+   column_name    | data_type 
+------------------+-----------
+ venue_id         | integer
+ venue_name       | text
+ city             | text
+ state            | text
+ zip              | text
+ country_code     | text
+ elevation_meters | numeric
+ elevation_feet   | numeric
+ latitude         | numeric
+ longitude        | numeric
+ capacity         | integer
+ grass            | boolean
+ dome             | boolean
+ timezone         | text
+(14 rows)
+
+
+══════════════════════════════════════════════════════
+STG.STG_SP_RATINGS
+══════════════════════════════════════════════════════
+ season | team_name  | conference | sp_rating | sp_ranking | sp_offense | sp_defense | sp_special_teams | sp_offense_ranking | sp_defense_ranking 
+--------+------------+------------+-----------+------------+------------+------------+------------------+--------------------+--------------------
+   2022 | Georgia    | SEC        |    35.300 |          1 |     37.200 |      3.700 |            1.700 |                 26 |                  1
+   2022 | Michigan   | Big Ten    |    32.000 |          2 |     38.000 |      7.600 |            1.600 |                 21 |                  4
+   2022 | Ohio State | Big Ten    |    31.100 |          3 |     45.100 |     15.700 |            1.700 |                  4 |                 15
+(3 rows)
+
+--- columns ---
+    column_name     | data_type 
+--------------------+-----------
+ season             | integer
+ team_name          | text
+ conference         | text
+ sp_rating          | numeric
+ sp_ranking         | integer
+ sp_offense         | numeric
+ sp_defense         | numeric
+ sp_special_teams   | numeric
+ sp_offense_ranking | integer
+ sp_defense_ranking | integer
+(10 rows)
+
+
+══════════════════════════════════════════════════════
+STG.STG_RECRUITING
+══════════════════════════════════════════════════════
+ recruiting_year | team_name | recruiting_rank | recruiting_points | recruiting_commits 
+-----------------+-----------+-----------------+-------------------+--------------------
+            2020 | Georgia   |               1 |            313.34 |                   
+            2020 | Alabama   |               2 |            310.44 |                   
+            2020 | Clemson   |               3 |            309.73 |                   
+(3 rows)
+
+--- columns ---
+    column_name     | data_type 
+--------------------+-----------
+ recruiting_year    | integer
+ team_name          | text
+ recruiting_rank    | integer
+ recruiting_points  | numeric
+ recruiting_commits | integer
+(5 rows)
+
+
+══════════════════════════════════════════════════════
+STG.STG_ADVANCED_STATS
+══════════════════════════════════════════════════════
+ season | team_name |  conference   | off_plays | off_drives | def_plays | def_drives | off_epa_per_play | off_epa_total | off_passing_epa | off_rushing_epa | def_epa_per_play | def_epa_total | def_passing_epa | def_rushing_epa | off_success_rate | off_pass_success_rate | off_rush_success_rate | off_std_downs_success_rate | off_pass_downs_success_rate | def_success_rate | def_pass_success_rate | def_rush_success_rate | def_std_downs_success_rate | def_pass_downs_success_rate | off_std_downs_epa | off_pass_downs_epa | def_std_downs_epa | def_pass_downs_epa | off_explosiveness | def_explosiveness | off_power_success | off_stuff_rate | off_line_yards | off_second_level_yards | off_open_field_yards | def_power_success | def_stuff_rate | def_line_yards | def_second_level_yards | def_open_field_yards | off_pts_per_opp | def_pts_per_opp | off_field_position_avg_start | def_field_position_avg_start | off_field_position_predicted_pts | def_field_position_predicted_pts | def_havoc_total | def_havoc_front_seven | def_havoc_db 
+--------+-----------+---------------+-----------+------------+-----------+------------+------------------+---------------+-----------------+-----------------+------------------+---------------+-----------------+-----------------+------------------+-----------------------+-----------------------+----------------------------+-----------------------------+------------------+-----------------------+-----------------------+----------------------------+-----------------------------+-------------------+--------------------+-------------------+--------------------+-------------------+-------------------+-------------------+----------------+----------------+------------------------+----------------------+-------------------+----------------+----------------+------------------------+----------------------+-----------------+-----------------+------------------------------+------------------------------+----------------------------------+----------------------------------+-----------------+-----------------------+--------------
+   2022 | Air Force | Mountain West |       843 |        132 |       640 |        126 |         0.287764 |      242.5853 |        0.458841 |        0.276025 |         0.082541 |       52.8261 |        0.229317 |        0.041006 |         0.493476 |              0.376344 |              0.510040 |                   0.549296 |                    0.318627 |         0.390625 |              0.412969 |              0.385075 |                   0.470862 |                    0.227488 |          0.257212 |           0.383464 |          0.054735 |           0.139074 |          1.072864 |          1.135623 |          0.797872 |       0.092369 |         3.6017 |                 1.0790 |               1.3936 |          0.578947 |       0.143284 |         3.0916 |                 0.9701 |               0.8746 |          4.2857 |          3.3846 |                        69.80 |                        71.10 |                           1.4080 |                          -1.3130 |          0.1930 |                0.1240 |       0.0690
+   2022 | Akron     | Mid-American  |       827 |        145 |       754 |        140 |         0.073199 |       60.5355 |        0.194705 |       -0.053213 |         0.243988 |      183.9669 |        0.380485 |        0.158388 |         0.409915 |              0.403131 |              0.436066 |                   0.476534 |                    0.274725 |         0.441645 |              0.452941 |              0.437653 |                   0.498106 |                    0.309735 |          0.021761 |           0.177583 |          0.181794 |           0.389290 |          1.162722 |          1.319361 |          0.795455 |       0.170492 |         3.0475 |                 1.0262 |               0.9410 |          0.706667 |       0.168704 |         3.0978 |                 1.0782 |               1.0636 |          3.0405 |          4.1875 |                        72.00 |                        68.50 |                           1.2600 |                          -1.5160 |          0.1510 |                0.0890 |       0.0620
+   2022 | Alabama   | SEC           |       897 |        161 |       898 |        168 |         0.298576 |      267.8230 |        0.394611 |        0.197938 |         0.021866 |       19.6358 |        0.012309 |        0.064588 |         0.472687 |              0.479303 |              0.465753 |                   0.503155 |                    0.399240 |         0.377506 |              0.348936 |              0.410798 |                   0.445000 |                    0.241611 |          0.169240 |           0.610361 |         -0.015798 |           0.097700 |          1.356406 |          1.134214 |          0.722222 |       0.194064 |         2.9852 |                 1.3562 |               2.0776 |          0.661538 |       0.220657 |         2.8293 |                 1.0070 |               0.9507 |          4.7813 |          3.4912 |                        68.80 |                        73.80 |                           1.5160 |                          -1.1190 |          0.1790 |                0.1090 |       0.0700
+(3 rows)
+
+--- columns ---
+           column_name            | data_type 
+----------------------------------+-----------
+ season                           | integer
+ team_name                        | text
+ conference                       | text
+ off_plays                        | integer
+ off_drives                       | integer
+ def_plays                        | integer
+ def_drives                       | integer
+ off_epa_per_play                 | numeric
+ off_epa_total                    | numeric
+ off_passing_epa                  | numeric
+ off_rushing_epa                  | numeric
+ def_epa_per_play                 | numeric
+ def_epa_total                    | numeric
+ def_passing_epa                  | numeric
+ def_rushing_epa                  | numeric
+ off_success_rate                 | numeric
+ off_pass_success_rate            | numeric
+ off_rush_success_rate            | numeric
+ off_std_downs_success_rate       | numeric
+ off_pass_downs_success_rate      | numeric
+ def_success_rate                 | numeric
+ def_pass_success_rate            | numeric
+ def_rush_success_rate            | numeric
+ def_std_downs_success_rate       | numeric
+ def_pass_downs_success_rate      | numeric
+ off_std_downs_epa                | numeric
+ off_pass_downs_epa               | numeric
+ def_std_downs_epa                | numeric
+ def_pass_downs_epa               | numeric
+ off_explosiveness                | numeric
+ def_explosiveness                | numeric
+ off_power_success                | numeric
+ off_stuff_rate                   | numeric
+ off_line_yards                   | numeric
+ off_second_level_yards           | numeric
+ off_open_field_yards             | numeric
+ def_power_success                | numeric
+ def_stuff_rate                   | numeric
+ def_line_yards                   | numeric
+ def_second_level_yards           | numeric
+ def_open_field_yards             | numeric
+ off_pts_per_opp                  | numeric
+ def_pts_per_opp                  | numeric
+ off_field_position_avg_start     | numeric
+ def_field_position_avg_start     | numeric
+ off_field_position_predicted_pts | numeric
+ def_field_position_predicted_pts | numeric
+ def_havoc_total                  | numeric
+ def_havoc_front_seven            | numeric
+ def_havoc_db                     | numeric
+(50 rows)
+
+
+══════════════════════════════════════════════════════
+STG.STG_TEAM_STATS
+══════════════════════════════════════════════════════
+ season | team_name |  conference   | games_played | pass_attempts | pass_completions | passing_yards | pass_tds | interceptions_thrown | rush_attempts | rushing_yards | rush_tds | third_down_attempts | third_down_conversions | fourth_down_attempts | fourth_down_conversions | penalties | penalty_yards | fumbles_lost | fumbles_recovered | interceptions_gained | turnovers | sacks | tackles_for_loss | total_yards | completion_pct | yards_per_attempt | third_down_pct | fourth_down_pct 
+--------+-----------+---------------+--------------+---------------+------------------+---------------+----------+----------------------+---------------+---------------+----------+---------------------+------------------------+----------------------+-------------------------+-----------+---------------+--------------+-------------------+----------------------+-----------+-------+------------------+-------------+----------------+-------------------+----------------+-----------------
+   2022 | Air Force | Mountain West |           13 |            87 |               41 |           916 |        8 |                    9 |           802 |          4254 |       37 |                 176 |                     79 |                   29 |                      21 |        51 |           386 |           11 |                 8 |                    2 |        13 |    24 |               66 |        5170 |           47.1 |             10.53 |           44.9 |            72.4
+   2022 | Akron     | Mid-American  |           12 |           457 |              296 |          3124 |       13 |                    8 |           348 |          1026 |       15 |                 155 |                     52 |                   24 |                      12 |        72 |           652 |           12 |                 2 |                   10 |        22 |    18 |               58 |        4150 |           64.8 |              6.84 |           33.5 |            50.0
+   2022 | Alabama   | SEC           |           13 |           438 |              280 |          3660 |       37 |                    7 |           458 |          2544 |       26 |                 162 |                     74 |                   15 |                       9 |       103 |           893 |            8 |                 9 |                    8 |        16 |    38 |               84 |        6204 |           63.9 |              8.36 |           45.7 |            60.0
+(3 rows)
+
+--- columns ---
+       column_name       | data_type 
+-------------------------+-----------
+ season                  | integer
+ team_name               | text
+ conference              | text
+ games_played            | integer
+ pass_attempts           | integer
+ pass_completions        | integer
+ passing_yards           | numeric
+ pass_tds                | integer
+ interceptions_thrown    | integer
+ rush_attempts           | integer
+ rushing_yards           | numeric
+ rush_tds                | integer
+ third_down_attempts     | integer
+ third_down_conversions  | integer
+ fourth_down_attempts    | integer
+ fourth_down_conversions | integer
+ penalties               | integer
+ penalty_yards           | numeric
+ fumbles_lost            | integer
+ fumbles_recovered       | integer
+ interceptions_gained    | integer
+ turnovers               | integer
+ sacks                   | integer
+ tackles_for_loss        | integer
+ total_yards             | numeric
+ completion_pct          | numeric
+ yards_per_attempt       | numeric
+ third_down_pct          | numeric
+ fourth_down_pct         | numeric
+(29 rows)
+
+
+══════════════════════════════════════════════════════
+STG.STG_GAME_WEATHER
+══════════════════════════════════════════════════════
+  game_id  | venue_id | game_date  | kickoff_hour | temperature_f | wind_speed_mph | wind_gusts_mph | precipitation_inches | humidity_pct | weather_code |         fetched_at         
+-----------+----------+------------+--------------+---------------+----------------+----------------+----------------------+--------------+--------------+----------------------------
+ 401426532 |     3796 | 2022-08-27 |           11 |          86.1 |            2.0 |            9.6 |                0.004 |           55 |           51 | 2026-04-24 12:28:44.057568
+ 401405059 |     3504 | 2022-08-27 |           11 |          62.0 |            4.7 |           12.1 |                0.000 |           74 |            1 | 2026-04-24 12:28:45.736573
+ 401413213 |     3689 | 2022-08-27 |           14 |          86.4 |            2.2 |            9.8 |                0.004 |           68 |           51 | 2026-04-24 12:28:46.422804
+(3 rows)
+
+--- columns ---
+     column_name      |          data_type          
+----------------------+-----------------------------
+ game_id              | bigint
+ venue_id             | integer
+ game_date            | date
+ kickoff_hour         | smallint
+ temperature_f        | numeric
+ wind_speed_mph       | numeric
+ wind_gusts_mph       | numeric
+ precipitation_inches | numeric
+ humidity_pct         | smallint
+ weather_code         | smallint
+ fetched_at           | timestamp without time zone
+(11 rows)
+
+
+══════════════════════════════════════════════════════
+INT.INT_TEAM_SEASON_FEATURES
+══════════════════════════════════════════════════════
+ team_name | season | team_id |  conference   |       city       | state | latitude  |  longitude  |    timezone    | games_played | wins | losses | win_pct | avg_points_scored | avg_points_allowed | avg_point_diff | home_games | away_games | neutral_site_games | sp_rating | sp_ranking | sp_offense | sp_defense | sp_special_teams | sp_offense_ranking | sp_defense_ranking | off_epa_per_play | off_epa_total | off_passing_epa | off_rushing_epa | def_epa_per_play | def_epa_total | def_passing_epa | def_rushing_epa | epa_differential | off_success_rate | off_pass_success_rate | off_rush_success_rate | off_std_downs_success_rate | off_pass_downs_success_rate | def_success_rate | def_pass_success_rate | def_rush_success_rate | def_std_downs_success_rate | def_pass_downs_success_rate | off_std_downs_epa | off_pass_downs_epa | def_std_downs_epa | def_pass_downs_epa | off_explosiveness | def_explosiveness | off_power_success | off_stuff_rate | off_line_yards | off_second_level_yards | off_open_field_yards | def_power_success | def_stuff_rate | def_line_yards | def_second_level_yards | def_open_field_yards | off_pts_per_opp | def_pts_per_opp | off_field_position_avg_start | def_field_position_avg_start | off_field_position_predicted_pts | def_field_position_predicted_pts | def_havoc_total | def_havoc_front_seven | def_havoc_db | off_plays | off_drives | def_plays | def_drives | stat_games | pass_attempts | pass_completions | passing_yards | pass_tds | interceptions_thrown | rush_attempts | rushing_yards | rush_tds | third_down_attempts | third_down_conversions | fourth_down_attempts | fourth_down_conversions | penalties | penalty_yards | fumbles_lost | fumbles_recovered | interceptions_gained | turnovers | sacks | tackles_for_loss | total_yards | completion_pct | yards_per_attempt | third_down_pct | fourth_down_pct | recruiting_3yr_avg | current_class_rank 
+-----------+--------+---------+---------------+------------------+-------+-----------+-------------+----------------+--------------+------+--------+---------+-------------------+--------------------+----------------+------------+------------+--------------------+-----------+------------+------------+------------+------------------+--------------------+--------------------+------------------+---------------+-----------------+-----------------+------------------+---------------+-----------------+-----------------+------------------+------------------+-----------------------+-----------------------+----------------------------+-----------------------------+------------------+-----------------------+-----------------------+----------------------------+-----------------------------+-------------------+--------------------+-------------------+--------------------+-------------------+-------------------+-------------------+----------------+----------------+------------------------+----------------------+-------------------+----------------+----------------+------------------------+----------------------+-----------------+-----------------+------------------------------+------------------------------+----------------------------------+----------------------------------+-----------------+-----------------------+--------------+-----------+------------+-----------+------------+------------+---------------+------------------+---------------+----------+----------------------+---------------+---------------+----------+---------------------+------------------------+----------------------+-------------------------+-----------+---------------+--------------+-------------------+----------------------+-----------+-------+------------------+-------------+----------------+-------------------+----------------+-----------------+--------------------+--------------------
+ Air Force |   2022 |    2005 | Mountain West | Colorado Springs | CO    | 38.996970 | -104.843617 | America/Denver |           12 |    9 |      3 |   0.750 |             27.67 |              13.25 |          14.42 |          7 |          5 |                  1 |     3.900 |         58 |     16.300 |     12.300 |           -0.100 |                114 |                 10 |         0.287764 |      242.5853 |        0.458841 |        0.276025 |         0.082541 |       52.8261 |        0.229317 |        0.041006 |           0.2052 |         0.493476 |              0.376344 |              0.510040 |                   0.549296 |                    0.318627 |         0.390625 |              0.412969 |              0.385075 |                   0.470862 |                    0.227488 |          0.257212 |           0.383464 |          0.054735 |           0.139074 |          1.072864 |          1.135623 |          0.797872 |       0.092369 |         3.6017 |                 1.0790 |               1.3936 |          0.578947 |       0.143284 |         3.0916 |                 0.9701 |               0.8746 |          4.2857 |          3.3846 |                        69.80 |                        71.10 |                           1.4080 |                          -1.3130 |          0.1930 |                0.1240 |       0.0690 |       843 |        132 |       640 |        126 |         13 |            87 |               41 |           916 |        8 |                    9 |           802 |          4254 |       37 |                 176 |                     79 |                   29 |                      21 |        51 |           386 |           11 |                 8 |                    2 |        13 |    24 |               66 |        5170 |           47.1 |             10.53 |           44.9 |            72.4 |             132.13 |                114
+ Air Force |   2023 |    2005 | Mountain West | Colorado Springs | CO    | 38.996970 | -104.843617 | America/Denver |           12 |    8 |      4 |   0.667 |             27.58 |              17.92 |           9.67 |          6 |          6 |                  2 |     5.900 |         44 |     25.600 |     20.900 |            1.200 |                 71 |                 30 |         0.259792 |      212.2502 |        0.498449 |        0.241534 |         0.118759 |       86.2187 |        0.208884 |        0.049157 |           0.1410 |         0.458996 |              0.409091 |              0.469417 |                   0.515823 |                    0.264865 |         0.402204 |              0.425474 |              0.381356 |                   0.462810 |                    0.280992 |          0.232168 |           0.354163 |          0.030832 |           0.294611 |          1.131756 |          1.176033 |          0.797619 |       0.100996 |         3.4762 |                 1.0199 |               1.3556 |          0.780000 |       0.180791 |         2.7223 |                 0.7994 |               0.8107 |          4.0541 |          3.9600 |                        69.40 |                        72.50 |                           1.4050 |                          -1.2020 |          0.1580 |                0.1050 |       0.0540 |       817 |        138 |       726 |        137 |         13 |           105 |               55 |          1105 |        7 |                   10 |           711 |          3648 |       36 |                 168 |                     78 |                   25 |                      17 |        39 |           322 |           11 |                 4 |                    6 |        17 |    30 |               68 |        4753 |           52.4 |             10.52 |           46.4 |            68.0 |             128.29 |                104
+ Air Force |   2024 |    2005 | Mountain West | Colorado Springs | CO    | 38.996970 | -104.843617 | America/Denver |           12 |    5 |      7 |   0.417 |             18.92 |              23.25 |          -4.33 |          6 |          6 |                  0 |   -11.700 |        111 |     17.800 |     27.500 |           -2.000 |                120 |                 76 |         0.130486 |      104.5192 |        0.084666 |        0.146032 |         0.194948 |      133.1495 |        0.322949 |        0.097045 |          -0.0645 |         0.418227 |              0.308219 |              0.443425 |                   0.486207 |                    0.239819 |         0.418741 |              0.425676 |              0.413437 |                   0.477516 |                    0.291667 |          0.110977 |           0.181685 |          0.150181 |           0.291735 |          1.053256 |          1.272789 |          0.827273 |       0.139144 |         3.0303 |                 0.8303 |               0.6544 |          0.679245 |       0.157623 |         3.0809 |                 1.1447 |               1.1654 |          4.0192 |          3.9688 |                        71.40 |                        69.10 |                           1.2730 |                          -1.5000 |          0.1460 |                0.1010 |       0.0450 |       801 |        125 |       683 |        121 |         12 |           138 |               62 |          1077 |        5 |                    4 |           668 |          2696 |       24 |                 184 |                     78 |                   36 |                      23 |        36 |           336 |            5 |                 8 |                   10 |        15 |    18 |               52 |        3773 |           44.9 |              7.80 |           42.4 |            63.9 |              87.97 |                172
+(3 rows)
+
+--- columns ---
+           column_name            | data_type 
+----------------------------------+-----------
+ team_name                        | text
+ season                           | integer
+ team_id                          | integer
+ conference                       | text
+ city                             | text
+ state                            | text
+ latitude                         | numeric
+ longitude                        | numeric
+ timezone                         | text
+ games_played                     | bigint
+ wins                             | bigint
+ losses                           | bigint
+ win_pct                          | numeric
+ avg_points_scored                | numeric
+ avg_points_allowed               | numeric
+ avg_point_diff                   | numeric
+ home_games                       | bigint
+ away_games                       | bigint
+ neutral_site_games               | bigint
+ sp_rating                        | numeric
+ sp_ranking                       | integer
+ sp_offense                       | numeric
+ sp_defense                       | numeric
+ sp_special_teams                 | numeric
+ sp_offense_ranking               | integer
+ sp_defense_ranking               | integer
+ off_epa_per_play                 | numeric
+ off_epa_total                    | numeric
+ off_passing_epa                  | numeric
+ off_rushing_epa                  | numeric
+ def_epa_per_play                 | numeric
+ def_epa_total                    | numeric
+ def_passing_epa                  | numeric
+ def_rushing_epa                  | numeric
+ epa_differential                 | numeric
+ off_success_rate                 | numeric
+ off_pass_success_rate            | numeric
+ off_rush_success_rate            | numeric
+ off_std_downs_success_rate       | numeric
+ off_pass_downs_success_rate      | numeric
+ def_success_rate                 | numeric
+ def_pass_success_rate            | numeric
+ def_rush_success_rate            | numeric
+ def_std_downs_success_rate       | numeric
+ def_pass_downs_success_rate      | numeric
+ off_std_downs_epa                | numeric
+ off_pass_downs_epa               | numeric
+ def_std_downs_epa                | numeric
+ def_pass_downs_epa               | numeric
+ off_explosiveness                | numeric
+ def_explosiveness                | numeric
+ off_power_success                | numeric
+ off_stuff_rate                   | numeric
+ off_line_yards                   | numeric
+ off_second_level_yards           | numeric
+ off_open_field_yards             | numeric
+ def_power_success                | numeric
+ def_stuff_rate                   | numeric
+ def_line_yards                   | numeric
+ def_second_level_yards           | numeric
+ def_open_field_yards             | numeric
+ off_pts_per_opp                  | numeric
+ def_pts_per_opp                  | numeric
+ off_field_position_avg_start     | numeric
+ def_field_position_avg_start     | numeric
+ off_field_position_predicted_pts | numeric
+ def_field_position_predicted_pts | numeric
+ def_havoc_total                  | numeric
+ def_havoc_front_seven            | numeric
+ def_havoc_db                     | numeric
+ off_plays                        | integer
+ off_drives                       | integer
+ def_plays                        | integer
+ def_drives                       | integer
+ stat_games                       | integer
+ pass_attempts                    | integer
+ pass_completions                 | integer
+ passing_yards                    | numeric
+ pass_tds                         | integer
+ interceptions_thrown             | integer
+ rush_attempts                    | integer
+ rushing_yards                    | numeric
+ rush_tds                         | integer
+ third_down_attempts              | integer
+ third_down_conversions           | integer
+ fourth_down_attempts             | integer
+ fourth_down_conversions          | integer
+ penalties                        | integer
+ penalty_yards                    | numeric
+ fumbles_lost                     | integer
+ fumbles_recovered                | integer
+ interceptions_gained             | integer
+ turnovers                        | integer
+ sacks                            | integer
+ tackles_for_loss                 | integer
+ total_yards                      | numeric
+ completion_pct                   | numeric
+ yards_per_attempt                | numeric
+ third_down_pct                   | numeric
+ fourth_down_pct                  | numeric
+ recruiting_3yr_avg               | numeric
+ current_class_rank               | integer
+(102 rows)
+
+
+══════════════════════════════════════════════════════
+INT.INT_TEAM_SEASON_CONTEXT
+══════════════════════════════════════════════════════
+   team_name   | season |    conference     | off_epa_per_play | off_epa_total | off_passing_epa | off_rushing_epa | off_success_rate | off_pass_success_rate | off_rush_success_rate | off_explosiveness | off_std_downs_success_rate | off_pass_downs_success_rate | off_std_downs_epa | off_pass_downs_epa | plays_per_game | off_epa_total_per_game | scoring_efficiency_ratio | rush_rate | off_power_success | off_stuff_rate | off_line_yards | off_second_level_yards | off_open_field_yards | off_pts_per_opp | def_epa_per_play | def_epa_total | def_passing_epa | def_rushing_epa | def_success_rate | def_pass_success_rate | def_rush_success_rate | def_explosiveness | def_std_downs_success_rate | def_pass_downs_success_rate | def_std_downs_epa | def_pass_downs_epa | def_power_success | def_stuff_rate | def_line_yards | def_second_level_yards | def_open_field_yards | def_pts_per_opp | def_havoc_total | def_havoc_front_seven | def_havoc_db | sacks_per_game | tfl_per_game | off_third_down_conv_rate | epa_differential | off_field_position_avg_start | def_field_position_avg_start | off_field_position_predicted_pts | def_field_position_predicted_pts | turnovers_forced_per_game | turnovers_lost_per_game | turnover_margin_per_game | penalties_per_game | penalty_yards_per_game | games_played | wins | losses | win_pct | avg_points_scored | avg_points_allowed | avg_point_diff | home_games | away_games | neutral_site_games | sp_rating | sp_ranking | sp_offense | sp_defense | sp_special_teams | sp_offense_ranking | sp_defense_ranking | recruiting_3yr_avg | current_class_rank | pct_games_dominant | pct_games_comfortable | pct_games_competitive | pct_games_deficit | pct_games_large_deficit | close_game_epa_per_play_season_avg | close_game_plays_total | close_game_count | close_game_count_plays_based 
+---------------+--------+-------------------+------------------+---------------+-----------------+-----------------+------------------+-----------------------+-----------------------+-------------------+----------------------------+-----------------------------+-------------------+--------------------+----------------+------------------------+--------------------------+-----------+-------------------+----------------+----------------+------------------------+----------------------+-----------------+------------------+---------------+-----------------+-----------------+------------------+-----------------------+-----------------------+-------------------+----------------------------+-----------------------------+-------------------+--------------------+-------------------+----------------+----------------+------------------------+----------------------+-----------------+-----------------+-----------------------+--------------+----------------+--------------+--------------------------+------------------+------------------------------+------------------------------+----------------------------------+----------------------------------+---------------------------+-------------------------+--------------------------+--------------------+------------------------+--------------+------+--------+---------+-------------------+--------------------+----------------+------------+------------+--------------------+-----------+------------+------------+------------+------------------+--------------------+--------------------+--------------------+--------------------+--------------------+-----------------------+-----------------------+-------------------+-------------------------+------------------------------------+------------------------+------------------+------------------------------
+ West Virginia |   2023 | Big 12            |         0.240135 |      215.8816 |        0.253891 |        0.255932 |         0.446051 |              0.410714 |              0.471326 |          1.306079 |                   0.493590 |                    0.338182 |          0.177270 |           0.382782 |          69.00 |                16.5693 |                   0.0727 |     0.630 |          0.728571 |       0.177419 |         3.2561 |                 1.2527 |               1.4337 |          3.8352 |         0.201865 |      170.7776 |        0.268071 |        0.173414 |         0.421986 |              0.401361 |              0.451128 |          1.313488 |                   0.474606 |                    0.312727 |          0.119973 |           0.371901 |          0.781250 |       0.172932 |         3.1536 |                 1.1554 |               1.3058 |          4.1304 |          0.1870 |                0.1120 |       0.0740 |          2.538 |        6.462 |                    0.397 |           0.0383 |                        69.10 |                        72.90 |                           1.4600 |                          -1.2210 |                     0.923 |                   1.308 |                   -0.385 |               5.08 |                  46.38 |           12 |    8 |      4 |   0.667 |             31.58 |              27.50 |           4.08 |          6 |          6 |                  0 |     7.500 |         37 |     31.500 |     24.600 |            0.500 |                 34 |                 48 |             201.07 |                 48 |              0.000 |                 0.250 |                 0.583 |             0.167 |                   0.000 |                             0.2436 |                    803 |                7 |                            8
+ Maryland      |   2022 | Big Ten           |         0.205387 |      187.5185 |        0.298769 |        0.118020 |         0.421687 |              0.423800 |              0.423256 |          1.294945 |                   0.496774 |                    0.262799 |          0.194776 |           0.227840 |          70.38 |                14.4561 |                   0.0726 |     0.513 |          0.675000 |       0.174419 |         2.9853 |                 0.9698 |               1.4256 |          4.3766 |         0.076089 |       70.4585 |        0.135058 |        0.055619 |         0.393089 |              0.390852 |              0.403670 |          1.146103 |                   0.453074 |                    0.272727 |          0.021956 |           0.184706 |          0.758065 |       0.174312 |         2.9360 |                 0.9289 |               0.9748 |          3.2278 |          0.1330 |                0.0820 |       0.0510 |          1.846 |        4.769 |                    0.417 |           0.1293 |                        71.30 |                        71.10 |                           1.3390 |                          -1.3130 |                     1.538 |                   1.231 |                    0.308 |               7.77 |                  71.08 |           12 |    7 |      5 |   0.583 |             29.17 |              24.08 |           5.08 |          7 |          5 |                  0 |    11.200 |         32 |     33.800 |     24.200 |            1.700 |                 39 |                 45 |             217.86 |                 31 |              0.000 |                 0.250 |                 0.583 |             0.083 |                   0.083 |                             0.2360 |                    794 |                8 |                            9
+ Memphis       |   2022 | American Athletic |         0.196790 |      185.9663 |        0.300006 |        0.122453 |         0.452910 |              0.443515 |              0.467532 |          1.189034 |                   0.505247 |                    0.327338 |          0.132265 |           0.351603 |          72.92 |                14.3505 |                   0.0830 |     0.520 |          0.764706 |       0.188312 |         2.9955 |                 1.0346 |               0.9416 |          4.1647 |         0.133015 |      119.1818 |        0.246478 |        0.044885 |         0.420759 |              0.442516 |              0.404206 |          1.201763 |                   0.457377 |                    0.342657 |          0.028162 |           0.356654 |          0.714286 |       0.175234 |         2.8521 |                 0.8808 |               0.6776 |          4.3385 |          0.1380 |                0.0780 |       0.0600 |          1.615 |        4.615 |                    0.454 |           0.0638 |                        68.70 |                        71.70 |                           1.5130 |                          -1.2870 |                     1.462 |                   1.846 |                   -0.385 |               4.08 |                  36.92 |           12 |    6 |      6 |   0.500 |             35.08 |              27.33 |           7.75 |          7 |          5 |                  0 |     6.800 |         49 |     37.000 |     31.800 |            1.700 |                 27 |                 89 |             176.46 |                 58 |              0.083 |                 0.083 |                 0.667 |             0.000 |                   0.167 |                             0.2015 |                    829 |                7 |                            9
+(3 rows)
+
+--- columns ---
+            column_name             | data_type 
+------------------------------------+-----------
+ team_name                          | text
+ season                             | integer
+ conference                         | text
+ off_epa_per_play                   | numeric
+ off_epa_total                      | numeric
+ off_passing_epa                    | numeric
+ off_rushing_epa                    | numeric
+ off_success_rate                   | numeric
+ off_pass_success_rate              | numeric
+ off_rush_success_rate              | numeric
+ off_explosiveness                  | numeric
+ off_std_downs_success_rate         | numeric
+ off_pass_downs_success_rate        | numeric
+ off_std_downs_epa                  | numeric
+ off_pass_downs_epa                 | numeric
+ plays_per_game                     | numeric
+ off_epa_total_per_game             | numeric
+ scoring_efficiency_ratio           | numeric
+ rush_rate                          | numeric
+ off_power_success                  | numeric
+ off_stuff_rate                     | numeric
+ off_line_yards                     | numeric
+ off_second_level_yards             | numeric
+ off_open_field_yards               | numeric
+ off_pts_per_opp                    | numeric
+ def_epa_per_play                   | numeric
+ def_epa_total                      | numeric
+ def_passing_epa                    | numeric
+ def_rushing_epa                    | numeric
+ def_success_rate                   | numeric
+ def_pass_success_rate              | numeric
+ def_rush_success_rate              | numeric
+ def_explosiveness                  | numeric
+ def_std_downs_success_rate         | numeric
+ def_pass_downs_success_rate        | numeric
+ def_std_downs_epa                  | numeric
+ def_pass_downs_epa                 | numeric
+ def_power_success                  | numeric
+ def_stuff_rate                     | numeric
+ def_line_yards                     | numeric
+ def_second_level_yards             | numeric
+ def_open_field_yards               | numeric
+ def_pts_per_opp                    | numeric
+ def_havoc_total                    | numeric
+ def_havoc_front_seven              | numeric
+ def_havoc_db                       | numeric
+ sacks_per_game                     | numeric
+ tfl_per_game                       | numeric
+ off_third_down_conv_rate           | numeric
+ epa_differential                   | numeric
+ off_field_position_avg_start       | numeric
+ def_field_position_avg_start       | numeric
+ off_field_position_predicted_pts   | numeric
+ def_field_position_predicted_pts   | numeric
+ turnovers_forced_per_game          | numeric
+ turnovers_lost_per_game            | numeric
+ turnover_margin_per_game           | numeric
+ penalties_per_game                 | numeric
+ penalty_yards_per_game             | numeric
+ games_played                       | bigint
+ wins                               | bigint
+ losses                             | bigint
+ win_pct                            | numeric
+ avg_points_scored                  | numeric
+ avg_points_allowed                 | numeric
+ avg_point_diff                     | numeric
+ home_games                         | bigint
+ away_games                         | bigint
+ neutral_site_games                 | bigint
+ sp_rating                          | numeric
+ sp_ranking                         | integer
+ sp_offense                         | numeric
+ sp_defense                         | numeric
+ sp_special_teams                   | numeric
+ sp_offense_ranking                 | integer
+ sp_defense_ranking                 | integer
+ recruiting_3yr_avg                 | numeric
+ current_class_rank                 | integer
+ pct_games_dominant                 | numeric
+ pct_games_comfortable              | numeric
+ pct_games_competitive              | numeric
+ pct_games_deficit                  | numeric
+ pct_games_large_deficit            | numeric
+ close_game_epa_per_play_season_avg | numeric
+ close_game_plays_total             | numeric
+ close_game_count                   | bigint
+ close_game_count_plays_based       | bigint
+(87 rows)
+
+
+══════════════════════════════════════════════════════
+INT.INT_GAME_TEAM_FEATURES
+══════════════════════════════════════════════════════
+  game_id  | season | week | game_date  |     team_name     |     opponent     | points_scored | points_allowed | win |    off_epa_per_play     | def_epa_per_play_allowed | close_game_epa_per_play | close_game_play_count | game_script | game_script_avg_margin | last3_off_epa_avg | last3_win_pct | last3_points_scored_avg | last3_def_epa_avg | last3_points_allowed_avg | days_since_last_game | opp_sp_rating_at_game_time 
+-----------+--------+------+------------+-------------------+------------------+---------------+----------------+-----+-------------------------+--------------------------+-------------------------+-----------------------+-------------+------------------------+-------------------+---------------+-------------------------+-------------------+--------------------------+----------------------+----------------------------
+ 401418782 |   2022 |    1 | 2022-09-02 | Abilene Christian | Lamar            |            28 |             14 |   1 |  0.11873991566265060241 |   0.06146921276595744681 |  0.11873991566265060241 |                    83 | competitive |     4.3425925925925926 |                   |               |                         |                   |                          |                      |                           
+ 401418783 |   2022 |    2 | 2022-09-11 | Abilene Christian | Prairie View A&M |            21 |             13 |   1 |  0.08347506250000000000 |   0.06276816438356164384 |  0.08347506250000000000 |                    64 | competitive |    -2.3375000000000000 |            0.1187 |         1.000 |                   28.00 |            0.0615 |                    14.00 |                    9 |                           
+ 401403887 |   2022 |    3 | 2022-09-17 | Abilene Christian | Missouri         |            17 |             34 |   0 | -0.00697165573770491803 |   0.30444033333333333333 | -0.00697165573770491803 |                    61 | deficit     |   -13.3170731707317073 |            0.1011 |         1.000 |                   24.50 |            0.0621 |                    13.50 |                    6 |                           
+(3 rows)
+
+--- columns ---
+        column_name         | data_type 
+----------------------------+-----------
+ game_id                    | bigint
+ season                     | integer
+ week                       | integer
+ game_date                  | date
+ team_name                  | text
+ opponent                   | text
+ points_scored              | integer
+ points_allowed             | integer
+ win                        | integer
+ off_epa_per_play           | numeric
+ def_epa_per_play_allowed   | numeric
+ close_game_epa_per_play    | numeric
+ close_game_play_count      | bigint
+ game_script                | text
+ game_script_avg_margin     | numeric
+ last3_off_epa_avg          | numeric
+ last3_win_pct              | numeric
+ last3_points_scored_avg    | numeric
+ last3_def_epa_avg          | numeric
+ last3_points_allowed_avg   | numeric
+ days_since_last_game       | integer
+ opp_sp_rating_at_game_time | numeric
+(22 rows)
+
+
+══════════════════════════════════════════════════════
+INT.INT_GAME_ENVIRONMENT
+══════════════════════════════════════════════════════
+  game_id  | season | week |     home_team      |     away_team      | venue_id | is_dome | venue_elevation_ft | away_home_elevation_ft | away_elevation_delta_ft | away_elevation_ascent_ft | away_travel_distance_mi | away_tz_delta_hrs | temperature_f | wind_speed_mph | wind_gusts_mph | precipitation_inches | humidity_pct | is_high_wind | is_precipitation | is_dome_adjusted_weather 
+-----------+--------+------+--------------------+--------------------+----------+---------+--------------------+------------------------+-------------------------+--------------------------+-------------------------+-------------------+---------------+----------------+----------------+----------------------+--------------+--------------+------------------+--------------------------
+ 401540155 |   2023 |    1 | Hampton            | Grambling          |     3459 | f       |                  0 |                      0 |                       0 |                        0 |                         |                 1 |               |                |                |                      |              |              |                  | f
+ 401540235 |   2023 |    1 | North Dakota State | Eastern Washington |     5239 | t       |                  0 |                      0 |                       0 |                        0 |                         |                 2 |            68 |              0 |              0 |                    0 |              | f            | f                | t
+ 401777329 |   2025 |   15 | Western Michigan   | Miami (OH)         |     3727 | t       |                  0 |                      0 |                       0 |                        0 |                   214.1 |                 0 |            68 |              0 |              0 |                    0 |           75 | f            | f                | t
+(3 rows)
+
+--- columns ---
+       column_name        |    data_type     
+--------------------------+------------------
+ game_id                  | bigint
+ season                   | integer
+ week                     | integer
+ home_team                | text
+ away_team                | text
+ venue_id                 | bigint
+ is_dome                  | boolean
+ venue_elevation_ft       | double precision
+ away_home_elevation_ft   | double precision
+ away_elevation_delta_ft  | double precision
+ away_elevation_ascent_ft | double precision
+ away_travel_distance_mi  | numeric
+ away_tz_delta_hrs        | integer
+ temperature_f            | numeric
+ wind_speed_mph           | numeric
+ wind_gusts_mph           | numeric
+ precipitation_inches     | numeric
+ humidity_pct             | smallint
+ is_high_wind             | boolean
+ is_precipitation         | boolean
+ is_dome_adjusted_weather | boolean
+(21 rows)
+
+
+══════════════════════════════════════════════════════
+ROW COUNTS — ALL SILVER TABLES
+══════════════════════════════════════════════════════
+        table_name        | rows  
+--------------------------+-------
+ int_game_environment     |  6134
+ int_game_team_features   | 29472
+ int_team_season_context  |   552
+ int_team_season_features |   552
+ stg_advanced_stats       |   552
+ stg_games                | 14736
+ stg_game_weather         | 14282
+ stg_recruiting           |  1184
+ stg_sp_ratings           |   538
+ stg_teams                |   138
+ stg_team_stats           |   534
+ stg_venues               |   840
+(12 rows)
+
