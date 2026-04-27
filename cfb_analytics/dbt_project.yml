@@ -30,3 +30,7 @@ models:
     marts:
       +schema: mart
       +materialized: table
+
+seeds:
+  cfb_analytics:
+    +schema: int

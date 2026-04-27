@@ -1,0 +1,36 @@
+version: 2
+
+models:
+  - name: int_game_environment
+    description: >
+      One row per game. Combines venue elevation, away team travel distance,
+      timezone delta, and kickoff weather. Dome override applied when is_dome=true.
+    columns:
+      - name: game_id
+        tests:
+          - unique
+          - not_null
+      - name: season
+        tests:
+          - not_null
+      - name: week
+        tests:
+          - not_null
+      - name: home_team
+        tests:
+          - not_null
+      - name: away_team
+        tests:
+          - not_null
+      - name: venue_elevation_ft
+        tests:
+          - not_null
+      - name: away_elevation_ascent_ft
+        description: GREATEST(delta, 0) — never negative
+        tests:
+          - not_null
+      - name: is_dome_adjusted_weather
+        tests:
+          - not_null
+          - accepted_values:
+              values: [true, false]
