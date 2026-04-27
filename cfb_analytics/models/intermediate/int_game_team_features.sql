@@ -22,7 +22,6 @@ with games as (
       and away_points is not null
 ),
 
--- one row per team per game from stg_games
 game_team_spine as (
     select
         game_id, season, week, game_date,
@@ -45,8 +44,6 @@ game_team_spine as (
     from games
 ),
 
--- game-level offensive EPA from raw.plays
--- ppa = null on special teams plays, excluded automatically by AVG()
 game_off_epa as (
     select
         game_id,
@@ -58,8 +55,6 @@ game_off_epa as (
     group by game_id, offense
 ),
 
--- game-level defensive EPA from raw.plays
--- defense perspective: high ppa allowed = bad defense
 game_def_epa as (
     select
         game_id,
@@ -71,7 +66,59 @@ game_def_epa as (
     group by game_id, defense
 ),
 
--- join EPA to spine
+/*
+  close_game_epa: filtered EPA excluding garbage time and overtime.
+  Exclusion rules:
+    - OT entirely excluded (period NOT IN 1-4)
+    - period >= 3 AND margin > 38 (blowout from Q3)
+    - period  = 4 AND margin > 28 (prevent defense Q4)
+  Q1 and Q2: all plays included regardless of score.
+*/
+close_game_epa as (
+    select
+        game_id,
+        offense                                                 as team_name,
+        avg(ppa)                                                as close_game_epa_per_play,
+        count(ppa)                                              as close_game_play_count
+    from {{ source('raw', 'plays') }}
+    where season_type = 'regular'
+      and period between 1 and 4
+      and not (period >= 3 and abs(offense_score - defense_score) > 38)
+      and not (period  = 4 and abs(offense_score - defense_score) > 28)
+    group by game_id, offense
+),
+
+/*
+  game_script: classify each game by the team's average score margin
+  across all plays they were on offense (OT included — narrative feature).
+*/
+game_margins as (
+    select
+        game_id,
+        season,
+        offense                                                 as team_name,
+        avg(offense_score - defense_score)                      as avg_margin
+    from {{ source('raw', 'plays') }}
+    where season_type = 'regular'
+    group by game_id, season, offense
+),
+
+game_script_labeled as (
+    select
+        game_id,
+        season,
+        team_name,
+        avg_margin,
+        case
+            when avg_margin >   21 then 'dominant'
+            when avg_margin >   10 then 'comfortable'
+            when avg_margin >=  -9 then 'competitive'
+            when avg_margin >= -21 then 'deficit'
+            else                        'large_deficit'
+        end                                                     as game_script
+    from game_margins
+),
+
 game_team_epa as (
     select
         s.game_id,
@@ -86,18 +133,22 @@ game_team_epa as (
         o.off_epa_per_play,
         o.off_play_count,
         d.def_epa_per_play_allowed,
-        d.def_play_count
+        d.def_play_count,
+        c.close_game_epa_per_play,
+        c.close_game_play_count,
+        g.game_script,
+        g.avg_margin                                            as game_script_avg_margin
     from game_team_spine s
     left join game_off_epa o
         on o.game_id = s.game_id and o.team_name = s.team_name
     left join game_def_epa d
         on d.game_id = s.game_id and d.team_name = s.team_name
+    left join close_game_epa c
+        on c.game_id = s.game_id and c.team_name = s.team_name
+    left join game_script_labeled g
+        on g.game_id = s.game_id and g.team_name = s.team_name
 ),
 
--- rolling window features
--- ROWS BETWEEN 3 PRECEDING AND 1 PRECEDING guarantees current game
--- is never included in its own features
--- partition by (team_name, season) prevents season boundary bleed
 rolling as (
     select
         game_id,
@@ -111,8 +162,11 @@ rolling as (
         win,
         off_epa_per_play,
         def_epa_per_play_allowed,
+        close_game_epa_per_play,
+        close_game_play_count,
+        game_script,
+        game_script_avg_margin,
 
-        -- offensive rolling features
         round(avg(off_epa_per_play) over (
             partition by team_name, season
             order by game_date, game_id
@@ -131,7 +185,6 @@ rolling as (
             rows between 3 preceding and 1 preceding
         )::numeric, 2)                                          as last3_points_scored_avg,
 
-        -- defensive rolling features
         round(avg(def_epa_per_play_allowed) over (
             partition by team_name, season
             order by game_date, game_id
@@ -144,7 +197,6 @@ rolling as (
             rows between 3 preceding and 1 preceding
         )::numeric, 2)                                          as last3_points_allowed_avg,
 
-        -- days rest
         game_date - lag(game_date) over (
             partition by team_name, season
             order by game_date, game_id
@@ -153,9 +205,6 @@ rolling as (
     from game_team_epa
 ),
 
--- opponent prior-year SP+ — leakage-free
--- uses season - 1 so rating is fully known before week 1
--- 2022 games will be null (no 2021 SP+ in dataset) — expected
 opp_sp as (
     select
         team_name,
@@ -176,9 +225,17 @@ final as (
         r.points_allowed,
         r.win,
 
-        -- current game EPA (for use as outcome/label, not as feature)
+        -- current game EPA (outcome/label, not feature)
         r.off_epa_per_play,
         r.def_epa_per_play_allowed,
+
+        -- garbage-time filtered EPA
+        r.close_game_epa_per_play,
+        r.close_game_play_count,
+
+        -- game script
+        r.game_script,
+        r.game_script_avg_margin,
 
         -- offensive rolling features (leakage-free)
         r.last3_off_epa_avg,
