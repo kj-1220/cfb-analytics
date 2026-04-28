@@ -88,6 +88,20 @@ close_game_epa as (
     group by game_id, offense
 ),
 
+close_game_def_epa as (
+    select
+        game_id,
+        defense                                                 as team_name,
+        avg(ppa)                                                as close_game_def_epa_per_play,
+        count(ppa)                                              as close_game_def_play_count
+    from {{ source('raw', 'plays') }}
+    where season_type = 'regular'
+      and period between 1 and 4
+      and not (period >= 3 and abs(offense_score - defense_score) > 38)
+      and not (period  = 4 and abs(offense_score - defense_score) > 28)
+    group by game_id, defense
+),
+
 /*
   game_script: classify each game by the team's average score margin
   across all plays they were on offense (OT included — narrative feature).
@@ -136,6 +150,8 @@ game_team_epa as (
         d.def_play_count,
         c.close_game_epa_per_play,
         c.close_game_play_count,
+        cd.close_game_def_epa_per_play,
+        cd.close_game_def_play_count,
         g.game_script,
         g.avg_margin                                            as game_script_avg_margin
     from game_team_spine s
@@ -145,6 +161,8 @@ game_team_epa as (
         on d.game_id = s.game_id and d.team_name = s.team_name
     left join close_game_epa c
         on c.game_id = s.game_id and c.team_name = s.team_name
+    left join close_game_def_epa cd
+        on cd.game_id = s.game_id and cd.team_name = s.team_name
     left join game_script_labeled g
         on g.game_id = s.game_id and g.team_name = s.team_name
 ),
@@ -164,6 +182,8 @@ rolling as (
         def_epa_per_play_allowed,
         close_game_epa_per_play,
         close_game_play_count,
+        close_game_def_epa_per_play,
+        close_game_def_play_count,
         game_script,
         game_script_avg_margin,
 
@@ -232,6 +252,8 @@ final as (
         -- garbage-time filtered EPA
         r.close_game_epa_per_play,
         r.close_game_play_count,
+        r.close_game_def_epa_per_play,
+        r.close_game_def_play_count,
 
         -- game script
         r.game_script,

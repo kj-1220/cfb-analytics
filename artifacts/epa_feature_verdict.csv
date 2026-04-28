@@ -1,0 +1,8 @@
+feature,role,reason
+off_epa_per_play,anchor,"Season-level offensive EPA. R²=0.779 vs avg points_scored. YoY r=0.423 95%CI[-0.090,0.093] <0.60 → wider prior."
+def_epa_per_play,anchor,"Season-level defensive EPA. YoY r=0.393 95%CI[-0.097,0.091] <0.60 → wider prior."
+close_game_epa_per_play,anchor,Game-level garbage-time filtered offensive EPA. Joint model anchor (Q4). R²=0.772 jointly with close_game_def_epa_per_play vs point_diff.
+close_game_def_epa_per_play,anchor,Game-level garbage-time filtered defensive EPA. Built Day 8 — symmetric counterpart to close_game_epa_per_play. R²=0.624 vs points_allowed (worse than unfiltered ΔR²=-0.0135). Joint model anchor (Q4).
+def_epa_per_play_allowed,redundant,Q1: |r|=0.971>0.85 with EPA pair anchor. Unlikely independent contribution.
+last3_off_epa_avg,redundant,Q4: residual |r|=0.0860≤0.1 — variance already captured by close-game EPA pair.
+last3_def_epa_avg,redundant,Q4: residual |r|=0.0540≤0.1 — variance already captured by close-game EPA pair.
