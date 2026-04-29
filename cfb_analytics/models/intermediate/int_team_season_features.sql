@@ -6,13 +6,28 @@ seasons as (
     union
     select distinct away_team as team_name, season from {{ ref('stg_games') }}
 ),
+team_seasons_conf as (
+    select home_team as team_name, season, home_conference as conference
+    from {{ ref('stg_games') }}
+    union
+    select away_team as team_name, season, away_conference as conference
+    from {{ ref('stg_games') }}
+),
+conf_by_season as (
+    select team_name, season, max(conference) as conference
+    from team_seasons_conf
+    where conference is not null
+    group by team_name, season
+),
 spine as (
     select
-        s.team_name, s.season, t.team_id, t.conference,
+        s.team_name, s.season, t.team_id, c.conference,
         t.city, t.state, t.latitude, t.longitude, t.timezone,
         t.primary_color, t.alt_color
     from seasons s
     inner join teams t on t.team_name = s.team_name
+    left join conf_by_season c
+        on c.team_name = s.team_name and c.season = s.season
 ),
 game_agg as (
     select
@@ -123,7 +138,7 @@ final as (
         adv.off_field_position_avg_start, adv.def_field_position_avg_start,
         adv.off_field_position_predicted_pts, adv.def_field_position_predicted_pts,
 
-        -- havoc (fixed: now correctly using def_havoc_*)
+        -- havoc
         adv.def_havoc_total, adv.def_havoc_front_seven, adv.def_havoc_db,
 
         -- volume
