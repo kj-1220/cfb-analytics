@@ -1,6 +1,13 @@
 with teams as (
     select * from {{ ref('stg_teams') }}
 ),
+fbs_conferences as (
+    select unnest(array[
+        'ACC','Big 12','Big Ten','SEC','Pac-12',
+        'Mountain West','American Athletic','Sun Belt',
+        'Mid-American','Conference USA','FBS Independents'
+    ]) as conference
+),
 seasons as (
     select distinct home_team as team_name, season from {{ ref('stg_games') }}
     union
@@ -26,8 +33,10 @@ spine as (
         t.primary_color, t.alt_color
     from seasons s
     inner join teams t on t.team_name = s.team_name
-    left join conf_by_season c
+    inner join conf_by_season c
         on c.team_name = s.team_name and c.season = s.season
+    inner join fbs_conferences f
+        on f.conference = c.conference
 ),
 game_agg as (
     select
