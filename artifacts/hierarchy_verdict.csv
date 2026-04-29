@@ -1,0 +1,5 @@
+question,finding,decision
+Does conference-level variance justify pooling?,"ICC: scored=0.093 (justified), point_diff=0.088 (justified), off_epa=0.094 (justified), def_epa=0.070 (justified)",Retain conference level in hierarchy
+Are any conferences outliers that will dominate pooling?,Outlier conferences (|z|>1.5): none,No outliers — pooling should be stable
+Does within-conference team spread justify a team level?,"Within-conference team SD range: 8.743–13.772, mean=10.356",Team level clearly justified — substantial spread within every conference
+Does three-level hierarchy (league → conference → team) fit the data?,"League ICC: scored=0.093, diff=0.088. Substantial within-conference team spread confirms team level needed.",THREE-LEVEL HIERARCHY CONFIRMED: league → conference → team
