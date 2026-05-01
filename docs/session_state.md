@@ -1,8 +1,7 @@
-cat > ~/cfb-analytics/docs/session_state.md << 'EOF'
 # CFB Analytics — Session State
 
 ## Last Updated
-2026-04-30
+2026-05-01
 
 ## Project Goal
 Hierarchical Negative Binomial model predicting score distributions for FBS college football games.
@@ -18,7 +17,7 @@ Goes live: September 24, 2026 — Liberty vs Coastal Carolina.
 - Conference-level pooling handles small sample size (12 games/team)
 - Built in PyMC
 
-## EDA Phase — Days 6–17
+## EDA Phase — Days 6–18
 | Day | Notebook | Status | Decision Produced |
 |---|---|---|---|
 | 6 | eda_01_scoring_distributions.ipynb | ✅ complete | Negative Binomial likelihood — overdispersion confirmed, VMR 3.56–8.05 |
@@ -28,30 +27,34 @@ Goes live: September 24, 2026 — Liberty vs Coastal Carolina.
 | 10 | eda_05_hierarchy_structure.ipynb | ✅ complete | Three-level hierarchy confirmed; ICC 0.07–0.09; team spread justifies team level |
 | 11 | eda_06_environmental_features.ipynb | ✅ complete | No environmental feature warrants inclusion as model adjuster — see findings and exceptions |
 | 12 | eda_07_momentum_rolling_features.ipynb | ✅ complete | All rolling features redundant after opponent quality + SP+ controls; no bye week effect |
-| 13 | Claude Code session | ❌ not started | Play-by-play schema exploration — style, tempo, positional, spatial, line play candidates |
-| 14 | eda_08_style_tempo_delta.ipynb | ❌ not built | Style & tempo delta analysis — signal identification |
-| 15 | eda_09_style_archetypes.ipynb | ❌ not built | Style archetype clustering + matchup interaction effects |
-| 16 | eda_10_game_script.ipynb | ❌ not built | Game script & close game signals |
-| 17 | eda_11_evaluation_framework.ipynb | ❌ not built | Written evaluation checklist for model sign-off |
+| 13 | eda_08_elo_excitement.ipynb | ❌ not built | SP+/ELO divergence signal; excitement index as game profile feature |
+| 14 | Claude Code session | ❌ not started | Play-by-play schema exploration — style, tempo, positional, spatial, line play candidates |
+| 15 | eda_09_style_tempo_delta.ipynb | ❌ not built | Style & tempo delta analysis — signal identification |
+| 16 | eda_10_style_archetypes.ipynb | ❌ not built | Style archetype clustering + matchup interaction effects |
+| 17 | eda_11_game_script.ipynb | ❌ not built | Game script & close game signals |
+| 18 | eda_12_evaluation_framework.ipynb | ❌ not built | Written evaluation checklist for model sign-off |
 
-## What The Next Session Must Do
-**Day 13 — Claude Code schema exploration session (terminal, not a notebook)**
+## What The Next Session Must Build
+`notebooks/eda/eda_08_elo_excitement.ipynb` — Day 13
 
-### Portal ingestion (still pending — do this first):
-- CFBD API key resets May 1 (1,000 call free tier limit)
-- Base URL: apinext.collegefootballdata.com (v2 API only — v1 is dead)
-- Pull transfer portal data for seasons 2022, 2023, 2024, 2025 (~4 API calls)
-- Fields needed: season, fromTeam, toTeam, rating, stars, position, eligibility
-- Build raw.transfer_portal table
-- Build stg_transfer_portal staging view
-- Aggregate to team-season level: sum of incoming ratings minus sum of outgoing ratings = portal_net_rating
-- Add portal_net_rating column to int_team_season_features
-- Re-run EDA 4 (Day 9) with portal data added — evaluate whether portal net rating adds signal beyond HS recruiting, especially in Big 12 where recruiting alone collapsed
+Questions to answer:
+1. Does SP+/ELO divergence predict next-season outcomes beyond SP+ alone? Compute divergence as normalized ELO minus SP+ implied rating. Evaluate partial r after controlling for SP+. YoY stability of divergence score.
+2. Does team-season excitement index profile add signal beyond existing game script features? Aggregate to team-season level: avg_excitement_index, pct_games_high_excitement (>= 6.0). Partial r after controlling for EPA pair. Compare to pct_games_competitive which is already in candidate list.
+3. Do divergence and excitement index interact — do high-divergence teams also have distinctive excitement index profiles?
 
-### Then Day 13 Claude Code exploration:
+Decision this day produces: whether ELO divergence and excitement index belong in the model as prior adjusters, and in what form.
+
+Key methodology notes:
+- ELO is only populated for FBS vs FBS games — filter accordingly
+- Excitement index is 41% coverage overall but higher within FBS games — check coverage before analysis
+- SP+/ELO divergence requires normalizing both to same scale before computing difference — do this in the notebook, not in dbt
+- Divergence is a team-season level feature — aggregate game-level ELO to season level first
+- Do not add divergence to dbt until it proves to be a valid feature
+
+## Day 14 — Claude Code Schema Exploration (after Day 13)
 Goal: identify every available feature candidate for style, tempo, matchup, positional strength,
 and spatial analysis. Output updates candidate_features.csv and produces notes that drive
-Day 14 notebook design.
+Day 15 notebook design.
 
 The exploration must answer:
 
@@ -92,14 +95,30 @@ The exploration must answer:
 - Identify which features can be computed as team A strength vs team B weakness deltas
 - Examples: strong edge rusher vs weak right tackle, deep coverage vs explosive pass attack
 
-### Definition of done for Day 13:
+### Definition of done for Day 14:
 - All candidate style/tempo/spatial/positional features listed with source table,
   grain, derivation path if needed, and keep=True/False recommendation
 - candidate_features.csv updated with new candidates
 - Explicit flag on whether PFF data would fill a meaningful gap after seeing what CFBD provides
-- Day 14 notebook design unblocked — no open data availability questions remaining
+- Day 15 notebook design unblocked — no open data availability questions remaining
 
-## Data Fixes Applied
+## Portal and NIL Status
+- Transfer portal CFBD v2 endpoint path unknown — v1 is dead, correct v2 path not found
+- Portal ingestion deprioritized — revisit only if model performance is poor during evaluation
+- NIL data requires On3 scrape — not built, deprioritized for same reason
+- ELO partially substitutes for these signals — captures effect of roster changes on actual performance
+
+## Data Added This Session (2026-05-01)
+**ELO and excitement index ingested from CFBD API:**
+- Added to raw.games: home_pregame_elo, away_pregame_elo, home_postgame_elo, away_postgame_elo, excitement_index
+- Added to stg_games: all five columns
+- Added to int_game_team_features: pregame_elo, opponent_pregame_elo, postgame_elo, excitement_index
+- ELO flipped correctly to team perspective (home team gets home_pregame_elo, away team gets away_pregame_elo)
+- Coverage: pregame_elo 6,478/29,472 rows (100% within FBS conferences), excitement_index 12,066/29,472 rows
+- ELO/SP+ correlation: r=0.8625 — meaningful overlap but 26% divergence worth exploring
+- Commit: "feat: add pregame_elo, postgame_elo, opponent_pregame_elo, excitement_index to int_game_team_features"
+
+## Data Fixes Applied (prior sessions)
 **Fix 1 — Conference assignment by season (not static snapshot)**
 - int_team_season_features now derives conference from stg_games by season
 - Commit: "fix: derive conference from game records by season, not static team snapshot"
@@ -144,8 +163,10 @@ The exploration must answer:
 - No last3_* rolling features in model
 - No bye week adjustment term in model
 - Early-season null handling: Approach A — impute with season-to-date prior
-- Style/tempo analysis: delta approach first, clustering second (Days 14–15)
-- PFF enterprise API: evaluate after Day 13 exploration confirms what CFBD gap exists
+- Style/tempo analysis: delta approach first, clustering second (Days 15–16)
+- PFF enterprise API: evaluate after Day 14 exploration confirms what CFBD gap exists
+- SP+/ELO divergence: compute in notebook first, add to dbt only if proven valid feature
+- Portal and NIL: deprioritized — revisit only if model underperforms in evaluation
 
 ## assign_tier Function — Canonical Version
 ```python
@@ -189,7 +210,6 @@ def assign_tier(row):
   - Big 12: essentially zero (R²=0.004)
 - Recruiting YoY stability: r=0.929–0.968 across all P4 conferences — very stable input
 - ⚠️ Recruiting requires conference-specific treatment — cannot be a flat feature
-- ⚠️ Transfer portal ingestion needed — especially important for Big 12
 
 ### Day 10 — Hierarchy Structure
 - 534 team-seasons, 136 teams, 11 FBS conferences, 4 seasons
@@ -216,12 +236,13 @@ def assign_tier(row):
 - Asymmetric opponent effect: +0.415 pts, p=0.710 — also no signal
 - Null handling: Approach A — impute with season-to-date prior; residual SD +8.2% higher in early weeks, below 10% materiality threshold
 - Imputation quality: corr=0.948 (offense), 0.932 (defense), MAE < 0.03 — high quality
-- opp_sp_rating_at_game_time confirmed in int_game_team_features schema — not previously documented
+- opp_sp_rating_at_game_time confirmed in int_game_team_features schema
 - Data: 2023–2025 only (3 seasons) — 2022 dropped by prior-year SP+ join design, correct by methodology
 
 ## Candidate Features
 - Authoritative list: artifacts/candidate_features.csv
 - Total features: 154 keep=True
+- pregame_elo, opponent_pregame_elo, postgame_elo, excitement_index now in int_game_team_features but NOT yet in candidate_features.csv — add after Day 13 evaluation if proven valid
 
 ## Artifacts Written
 | File | Status | Notes |
@@ -249,9 +270,10 @@ def assign_tier(row):
 - Connection: host=127.0.0.1 port=5455 dbname=postgres user=postgres password=postgres
 - Boolean columns (is_dome, is_high_wind, is_precipitation) return as Python objects with None values — use .map(lambda x: 1 if x is True else (0 if x is False else np.nan)).astype(float) before partial_corr
 - opp_sp_rating_at_game_time exists in int_game_team_features — not yet fully investigated
+- pregame_elo, opponent_pregame_elo, postgame_elo, excitement_index now exist in int_game_team_features
 
 ## Source Tables
-- int.int_game_team_features — game-level team performance
+- int.int_game_team_features — game-level team performance including pregame_elo, excitement_index
 - int.int_game_environment — game-level venue and weather
 - int.int_team_season_context — season-level team context including conference
 - int.int_team_season_features — season-level team features, 534 rows, FBS only
@@ -291,4 +313,3 @@ At the end of every session:
 4. Add key findings
 5. Update what the next session must do
 6. Commit: git add docs/session_state.md && git commit -m "docs: update session state after Day X" && git push
-EOF
