@@ -18,7 +18,7 @@ Goes live: September 24, 2026 — Liberty vs Coastal Carolina.
 - Conference-level pooling handles small sample size (12 games/team)
 - Built in PyMC
 
-## EDA Phase — Days 6–14
+## EDA Phase — Days 6–17
 | Day | Notebook | Status | Decision Produced |
 |---|---|---|---|
 | 6 | eda_01_scoring_distributions.ipynb | ✅ complete | Negative Binomial likelihood — overdispersion confirmed, VMR 3.56–8.05 |
@@ -27,14 +27,17 @@ Goes live: September 24, 2026 — Liberty vs Coastal Carolina.
 | 9 | eda_04_sp_ratings_recruiting.ipynb | ✅ complete | SP+ anchor candidate YoY r=0.761; recruiting supporting but conference-specific — see findings |
 | 10 | eda_05_hierarchy_structure.ipynb | ✅ complete | Three-level hierarchy confirmed; ICC 0.07–0.09; team spread justifies team level |
 | 11 | eda_06_environmental_features.ipynb | ✅ complete | No environmental feature warrants inclusion as model adjuster — see findings and exceptions |
-| 12 | eda_07_momentum_rolling_features.ipynb | ❌ not built | Whether rolling features add signal beyond season averages |
-| 13 | eda_08_game_script_close_games.ipynb | ❌ not built | Whether game script belongs in model and in what role |
-| 14 | eda_09_evaluation_framework.ipynb | ❌ not built | Written evaluation checklist for model sign-off |
+| 12 | eda_07_momentum_rolling_features.ipynb | ✅ complete | All rolling features redundant after opponent quality + SP+ controls; no bye week effect |
+| 13 | Claude Code session | ❌ not started | Play-by-play schema exploration — style, tempo, positional, spatial, line play candidates |
+| 14 | eda_08_style_tempo_delta.ipynb | ❌ not built | Style & tempo delta analysis — signal identification |
+| 15 | eda_09_style_archetypes.ipynb | ❌ not built | Style archetype clustering + matchup interaction effects |
+| 16 | eda_10_game_script.ipynb | ❌ not built | Game script & close game signals |
+| 17 | eda_11_evaluation_framework.ipynb | ❌ not built | Written evaluation checklist for model sign-off |
 
 ## What The Next Session Must Do
-**May 1 — Transfer portal ingestion first, then Day 12**
+**Day 13 — Claude Code schema exploration session (terminal, not a notebook)**
 
-### Portal ingestion (before any notebook work):
+### Portal ingestion (still pending — do this first):
 - CFBD API key resets May 1 (1,000 call free tier limit)
 - Base URL: apinext.collegefootballdata.com (v2 API only — v1 is dead)
 - Pull transfer portal data for seasons 2022, 2023, 2024, 2025 (~4 API calls)
@@ -45,16 +48,56 @@ Goes live: September 24, 2026 — Liberty vs Coastal Carolina.
 - Add portal_net_rating column to int_team_season_features
 - Re-run EDA 4 (Day 9) with portal data added — evaluate whether portal net rating adds signal beyond HS recruiting, especially in Big 12 where recruiting alone collapsed
 
-### Then build Day 12:
-`notebooks/eda/eda_07_momentum_rolling_features.ipynb`
+### Then Day 13 Claude Code exploration:
+Goal: identify every available feature candidate for style, tempo, matchup, positional strength,
+and spatial analysis. Output updates candidate_features.csv and produces notes that drive
+Day 14 notebook design.
 
-Questions to answer:
-1. Do last3_off_epa_avg and last3_win_pct predict next-game outcomes better than season-level averages?
-2. How much do rolling features diverge from season averages mid-season? When do they converge?
-3. Is there a measurable bye week effect in days_since_last_game?
-4. How should Week 1 and Week 2 nulls be handled?
+The exploration must answer:
 
-Decision: whether rolling features add signal beyond season averages and how to handle early-season nulls.
+**Play-by-play grain:**
+- What play-by-play tables exist and at what grain (play, drive, game)?
+- Are play direction and field zone captured (left/right edge, boundary/field, behind line, intermediate, deep)?
+- Is individual player tagging available per play? What positions and coverage?
+- What seasons and what % of games are covered?
+
+**Style & tempo:**
+- Plays per game, time of possession, tempo (pace relative to play clock)
+- Rush rate, pass rate — overall and by down/distance
+- Explosive play rate by run vs pass (20+ yard threshold)
+- Success rate overall and by down, distance, field zone
+- Average depth of target, air yards
+
+**Line play:**
+- Stuff rate (run stopped at or behind line of scrimmage)
+- Line yards, opportunity rate
+- Sack rate, pressure rate, time to throw
+- Run block win rate, pass block win rate if available
+- Are these pre-computed or derived from play-by-play?
+
+**Spatial & field position:**
+- Can explosiveness and success rate be computed by field zone?
+- Is play direction tagged (left, middle, right)?
+- Can boundary vs field side tendencies be identified?
+- Hash position if available
+
+**Positional strength proxies:**
+- Recruiting composites by position group (QB, OL, DL, DB, WR, RB) — available or aggregate only?
+- Any PFF-style grades in CFBD or adjacent tables?
+- Havoc rates by position group — already have def_havoc_* columns, check granularity
+- opp_sp_rating_at_game_time exists in int_game_team_features — investigate what it contains
+
+**Matchup construction:**
+- Confirm opponent column exists at play level for matchup delta construction
+- Identify which features can be computed as team A strength vs team B weakness deltas
+- Examples: strong edge rusher vs weak right tackle, deep coverage vs explosive pass attack
+
+### Definition of done for Day 13:
+- All candidate style/tempo/spatial/positional features listed with source table,
+  grain, derivation path if needed, and keep=True/False recommendation
+- candidate_features.csv updated with new candidates
+- Explicit flag on whether PFF data would fill a meaningful gap after seeing what CFBD provides
+- Day 14 notebook design unblocked — no open data availability questions remaining
 
 ## Data Fixes Applied
 **Fix 1 — Conference assignment by season (not static snapshot)**
@@ -98,6 +141,11 @@ Decision: whether rolling features add signal beyond season averages and how to 
 - away_travel_distance_mi: supporting-unstable only in max stress population; if included use tight prior near zero
 - Notre Dame pools with ACC for environmental analysis
 - UConn pools with American Athletic for environmental analysis
+- No last3_* rolling features in model
+- No bye week adjustment term in model
+- Early-season null handling: Approach A — impute with season-to-date prior
+- Style/tempo analysis: delta approach first, clustering second (Days 14–15)
+- PFF enterprise API: evaluate after Day 13 exploration confirms what CFBD gap exists
 
 ## assign_tier Function — Canonical Version
 ```python
@@ -141,7 +189,7 @@ def assign_tier(row):
   - Big 12: essentially zero (R²=0.004)
 - Recruiting YoY stability: r=0.929–0.968 across all P4 conferences — very stable input
 - ⚠️ Recruiting requires conference-specific treatment — cannot be a flat feature
-- ⚠️ Transfer portal ingestion needed May 1 — especially important for Big 12
+- ⚠️ Transfer portal ingestion needed — especially important for Big 12
 
 ### Day 10 — Hierarchy Structure
 - 534 team-seasons, 136 teams, 11 FBS conferences, 4 seasons
@@ -161,6 +209,16 @@ def assign_tier(row):
 - Dome: OLS coefficient +0.87 pts total scoring after EPA. Below 2-point threshold. Not a model term.
 - Kickoff × timezone: n=22 early kickoffs — insufficient. Re-evaluate with 2026 data.
 
+### Day 12 — Momentum & Rolling Features
+- All five last3_* features redundant — partial r 0.02–0.08 after controlling for both teams' season-to-date EPA + prior-year SP+
+- YoY r range 0.35–0.45 — below or near off_epa benchmark of 0.423
+- Bye week effect: no signal — partial r=0.006, p=0.71 after quality controls
+- Asymmetric opponent effect: +0.415 pts, p=0.710 — also no signal
+- Null handling: Approach A — impute with season-to-date prior; residual SD +8.2% higher in early weeks, below 10% materiality threshold
+- Imputation quality: corr=0.948 (offense), 0.932 (defense), MAE < 0.03 — high quality
+- opp_sp_rating_at_game_time confirmed in int_game_team_features schema — not previously documented
+- Data: 2023–2025 only (3 seasons) — 2022 dropped by prior-year SP+ join design, correct by methodology
+
 ## Candidate Features
 - Authoritative list: artifacts/candidate_features.csv
 - Total features: 154 keep=True
@@ -173,6 +231,7 @@ def assign_tier(row):
 | artifacts/sp_recruiting_verdict.csv | ✅ valid | Day 9 output |
 | artifacts/hierarchy_verdict.csv | ✅ valid | Day 10 output, post-fix numbers |
 | artifacts/environment_verdict.csv | ✅ valid | Day 11 output, post elevation fix |
+| artifacts/momentum_verdict.csv | ✅ valid | Day 12 output |
 
 ## YoY Benchmarks
 - off_epa_per_play YoY r = 0.423
@@ -189,6 +248,7 @@ def assign_tier(row):
 - All numeric columns from psycopg2 return as Decimal — cast entire numeric column list to float64 immediately
 - Connection: host=127.0.0.1 port=5455 dbname=postgres user=postgres password=postgres
 - Boolean columns (is_dome, is_high_wind, is_precipitation) return as Python objects with None values — use .map(lambda x: 1 if x is True else (0 if x is False else np.nan)).astype(float) before partial_corr
+- opp_sp_rating_at_game_time exists in int_game_team_features — not yet fully investigated
 
 ## Source Tables
 - int.int_game_team_features — game-level team performance
