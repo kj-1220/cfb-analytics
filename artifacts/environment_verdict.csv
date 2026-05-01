@@ -1,0 +1,14 @@
+feature,population,partial_r,yoy_r,role,reason
+venue_elevation_ft,Full away population,-0.024,,redundant,partial_r=-0.0240 in Full away population
+away_elevation_delta_ft,"Elev delta >= 3,000 ft",-0.0132,0.8633,redundant,"partial_r=-0.0132 in Elev delta >= 3,000 ft"
+away_home_elevation_ft,Full away population,-0.0073,,redundant,partial_r=-0.0073 in Full away population
+away_travel_distance_mi,Travel >= 500 mi,0.1017,0.7229,supporting — unstable,partial_r=+0.1017 in Travel >= 500 mi
+away_tz_delta_hrs,Full away population,-0.0964,,redundant,partial_r=-0.0964 in Full away population
+temperature_f,Non-dome games,0.025,,redundant,partial_r=+0.0250 in Non-dome games
+wind_speed_mph,Non-dome games,-0.0081,,redundant,partial_r=-0.0081 in Non-dome games
+humidity_pct,Non-dome games,0.0032,,redundant,partial_r=+0.0032 in Non-dome games
+wind_chill,Non-dome games,0.0243,,redundant,partial_r=+0.0243 in Non-dome games
+heat_index,Non-dome games,0.0266,,redundant,partial_r=+0.0266 in Non-dome games
+is_precipitation,Non-dome games,-0.0014,,insufficient sample,partial_r=-0.0014 in Non-dome games
+is_dome,All games,,,see dome analysis,residual SD comparison — see Section 5g
+is_high_wind,Non-dome games,-0.0032,,redundant,partial_r=-0.0032 in Non-dome games
