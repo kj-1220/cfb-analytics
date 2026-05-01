@@ -15,7 +15,12 @@ with games as (
         away_team,
         home_points,
         away_points,
-        season_type
+        season_type,
+        home_pregame_elo,
+        away_pregame_elo,
+        home_postgame_elo,
+        away_postgame_elo,
+        excitement_index
     from {{ ref('stg_games') }}
     where season_type = 'regular'
       and home_points is not null
@@ -29,7 +34,11 @@ game_team_spine as (
         away_team                                               as opponent,
         home_points                                             as points_scored,
         away_points                                             as points_allowed,
-        case when home_points > away_points then 1 else 0 end  as win
+        case when home_points > away_points then 1 else 0 end  as win,
+        home_pregame_elo                                        as pregame_elo,
+        away_pregame_elo                                        as opponent_pregame_elo,
+        home_postgame_elo                                       as postgame_elo,
+        excitement_index
     from games
 
     union all
@@ -40,7 +49,11 @@ game_team_spine as (
         home_team                                               as opponent,
         away_points                                             as points_scored,
         home_points                                             as points_allowed,
-        case when away_points > home_points then 1 else 0 end  as win
+        case when away_points > home_points then 1 else 0 end  as win,
+        away_pregame_elo                                        as pregame_elo,
+        home_pregame_elo                                        as opponent_pregame_elo,
+        away_postgame_elo                                       as postgame_elo,
+        excitement_index
     from games
 ),
 
@@ -66,14 +79,6 @@ game_def_epa as (
     group by game_id, defense
 ),
 
-/*
-  close_game_epa: filtered EPA excluding garbage time and overtime.
-  Exclusion rules:
-    - OT entirely excluded (period NOT IN 1-4)
-    - period >= 3 AND margin > 38 (blowout from Q3)
-    - period  = 4 AND margin > 28 (prevent defense Q4)
-  Q1 and Q2: all plays included regardless of score.
-*/
 close_game_epa as (
     select
         game_id,
@@ -102,10 +107,6 @@ close_game_def_epa as (
     group by game_id, defense
 ),
 
-/*
-  game_script: classify each game by the team's average score margin
-  across all plays they were on offense (OT included — narrative feature).
-*/
 game_margins as (
     select
         game_id,
@@ -144,6 +145,10 @@ game_team_epa as (
         s.points_scored,
         s.points_allowed,
         s.win,
+        s.pregame_elo,
+        s.opponent_pregame_elo,
+        s.postgame_elo,
+        s.excitement_index,
         o.off_epa_per_play,
         o.off_play_count,
         d.def_epa_per_play_allowed,
@@ -178,6 +183,10 @@ rolling as (
         points_scored,
         points_allowed,
         win,
+        pregame_elo,
+        opponent_pregame_elo,
+        postgame_elo,
+        excitement_index,
         off_epa_per_play,
         def_epa_per_play_allowed,
         close_game_epa_per_play,
@@ -245,7 +254,7 @@ final as (
         r.points_allowed,
         r.win,
 
-        -- current game EPA (outcome/label, not feature)
+        -- current game EPA
         r.off_epa_per_play,
         r.def_epa_per_play_allowed,
 
@@ -259,12 +268,10 @@ final as (
         r.game_script,
         r.game_script_avg_margin,
 
-        -- offensive rolling features (leakage-free)
+        -- rolling features
         r.last3_off_epa_avg,
         r.last3_win_pct,
         r.last3_points_scored_avg,
-
-        -- defensive rolling features (leakage-free)
         r.last3_def_epa_avg,
         r.last3_points_allowed_avg,
 
@@ -272,7 +279,15 @@ final as (
         r.days_since_last_game,
 
         -- opponent strength — prior year only
-        sp.opp_sp_rating                                        as opp_sp_rating_at_game_time
+        sp.opp_sp_rating                                        as opp_sp_rating_at_game_time,
+
+        -- elo
+        r.pregame_elo,
+        r.opponent_pregame_elo,
+        r.postgame_elo,
+
+        -- game competitiveness
+        r.excitement_index
 
     from rolling r
     left join opp_sp sp

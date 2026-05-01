@@ -20,7 +20,12 @@ cleaned as (
         away_team::text                                    as away_team,
         away_conference::text                              as away_conference,
         away_points::int                                   as away_points,
-        extract(year from cast(start_date as timestamp))::int as game_year
+        extract(year from cast(start_date as timestamp))::int as game_year,
+        home_pregame_elo::numeric                          as home_pregame_elo,
+        away_pregame_elo::numeric                          as away_pregame_elo,
+        home_postgame_elo::numeric                         as home_postgame_elo,
+        away_postgame_elo::numeric                         as away_postgame_elo,
+        excitement_index::numeric                          as excitement_index
     from source
     where home_points is not null
       and away_points is not null
