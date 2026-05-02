@@ -1,3 +1,4 @@
+cat > ~/cfb-analytics/docs/session_state.md << 'EOF'
 # CFB Analytics — Session State
 
 ## Last Updated
@@ -17,7 +18,7 @@ Goes live: September 24, 2026 — Liberty vs Coastal Carolina.
 - Conference-level pooling handles small sample size (12 games/team)
 - Built in PyMC
 
-## EDA Phase — Days 6–18
+## EDA Phase — Days 6–19
 | Day | Notebook | Status | Decision Produced |
 |---|---|---|---|
 | 6 | eda_01_scoring_distributions.ipynb | ✅ complete | Negative Binomial likelihood — overdispersion confirmed, VMR 3.56–8.05 |
@@ -25,7 +26,7 @@ Goes live: September 24, 2026 — Liberty vs Coastal Carolina.
 | 8 | eda_03_epa_deep_dive.ipynb | ✅ complete | Game-level close-game EPA pair is joint model anchor; off YoY r=0.423, def YoY r=0.393 |
 | 9 | eda_04_sp_ratings_recruiting.ipynb | ✅ complete | SP+ anchor candidate YoY r=0.761; recruiting supporting but conference-specific — see findings |
 | 10 | eda_05_hierarchy_structure.ipynb | ✅ complete | Three-level hierarchy confirmed; ICC 0.07–0.09; team spread justifies team level |
-| 11 | eda_06_environmental_features.ipynb | ✅ complete | No environmental feature warrants inclusion as model adjuster — see findings and exceptions |
+| 11 | eda_06_environmental_features.ipynb | ✅ complete | No environmental adjusters for spread; temperature/wind chill small signal on individual scoring rate — see findings |
 | 12 | eda_07_momentum_rolling_features.ipynb | ✅ complete | All rolling features redundant after opponent quality + SP+ controls; no bye week effect |
 | 13 | eda_08_elo_excitement.ipynb | ❌ not built | SP+/ELO divergence signal; excitement index as game profile feature |
 | 14 | Claude Code session | ❌ not started | Play-by-play schema exploration — style, tempo, positional, spatial, line play candidates |
@@ -33,6 +34,27 @@ Goes live: September 24, 2026 — Liberty vs Coastal Carolina.
 | 16 | eda_10_style_archetypes.ipynb | ❌ not built | Style archetype clustering + matchup interaction effects |
 | 17 | eda_11_game_script.ipynb | ❌ not built | Game script & close game signals |
 | 18 | eda_12_evaluation_framework.ipynb | ❌ not built | Written evaluation checklist for model sign-off |
+| 19 | eda_13_eda_finalization.ipynb | ❌ not built | Consolidate all verdict CSVs into master_verdict.csv; produce final_features.csv; resolve all ambiguities; write prior specification draft |
+
+## Model Build Phase — Days 20–33
+| Day | Notebook | Goal |
+|---|---|---|
+| 20 | model_01_prior_specification.ipynb | Translate every EDA finding into a written prior distribution. Every parameter needs a prior before any code is written. Traceable to master_verdict.csv. |
+| 21 | model_02_architecture.ipynb | Write hierarchical Negative Binomial model structure in PyMC. No fitting yet. Three levels: league → conference → team. Document every design decision and the EDA finding that motivated it. |
+| 22 | model_03_first_fit.ipynb | Fit on 2022–2024 training data. Do not touch 2025 holdout. Record fit time, divergences, initial parameter estimates. |
+| 23 | model_04_prior_predictive_checks.ipynb | Sample before seeing data. Does it produce plausible CFB scores? Fix priors if it generates 0-point or 150-point games. |
+| 24 | model_05_posterior_checks.ipynb | R-hat < 1.01, trace plots, energy plots, effective sample size. Confirm convergence. Investigate divergences. |
+| 25 | model_06_holdout_evaluation.ipynb | First look at 2025 holdout. Overall Brier score, calibration curve. Baseline before subgroup breakouts. |
+| 26 | model_07_evaluation_by_conference_tier.ipynb | Brier score and calibration by P4, G5, Independents. Model must perform credibly across all tiers. |
+| 27 | model_08_evaluation_by_game_type.ipynb | Rivalry games, cross-tier matchups, neutral site games. Quantify how model handles upsets. |
+| 28 | model_09_evaluation_season_progression.ipynb | Does calibration improve as season progresses? Week 1 is prior-driven. Week 8 has rolling data. Quantify improvement. |
+| 29 | model_10_home_away_spread_accuracy.ipynb | Home field advantage calibration. Spread accuracy by expected margin. |
+| 30 | model_11_year_over_year_stability.ipynb | Do 2023 model ratings predict 2024 performance? Tests whether team quality estimates are predictive not just descriptive. |
+| 31 | model_12_refinement.ipynb | Adjust based on evaluation findings. May require revisiting priors, hierarchy, or dropping features. Likely a two-session day. |
+| 32 | model_13_stress_testing.ipynb | Edge cases: extreme weather, maximum travel, large timezone deltas, teams with very few data points. Find where model breaks. |
+| 33 | model_14_signoff.ipynb | Work through evaluation checklist from Day 18. Document every modeling decision, EDA finding that motivated it, and known limitations. Model not signed off until every checklist item addressed. |
+
+Gold layer begins Day 34.
 
 ## What The Next Session Must Build
 `notebooks/eda/eda_08_elo_excitement.ipynb` — Day 13
@@ -154,9 +176,12 @@ The exploration must answer:
 - FBS Independents: not a pooling group
 - No tiers within conferences: team-level parameters handle within-conference spread
 - Three-level hierarchy: league → conference → team — confirmed Day 10
-- No environmental feature as model adjuster — none cleared both thresholds
+- No environmental feature as model adjuster for spread — none cleared both thresholds
 - is_dome: not a spread term (residual SD diff 0.69 pts); not an over/under term (OLS coef +0.87 pts after EPA)
-- Weather features: redundant for both spread and over/under after EPA control
+- Weather features (spread): redundant after EPA control — partial r < 0.03 for all features
+- Weather features (over/under): redundant after EPA control — partial r < 0.03 vs total scoring
+- Weather features (individual scoring rate): temperature r=+0.037, wind_chill r=+0.037, heat_index r=+0.038 — small but statistically significant; evaluate at model build whether to include as weak scoring rate adjusters
+- High wind asymmetry: home scoring -2.94 pts vs away -0.55 pts — spread-relevant but insufficient sample; monitor with 2026 data
 - away_travel_distance_mi: supporting-unstable only in max stress population; if included use tight prior near zero
 - Notre Dame pools with ACC for environmental analysis
 - UConn pools with American Athletic for environmental analysis
@@ -167,6 +192,8 @@ The exploration must answer:
 - PFF enterprise API: evaluate after Day 14 exploration confirms what CFBD gap exists
 - SP+/ELO divergence: compute in notebook first, add to dbt only if proven valid feature
 - Portal and NIL: deprioritized — revisit only if model underperforms in evaluation
+- def_epa_per_play_allowed (game-level, int_game_team_features): redundant at game level — r=0.971 with close-game anchor pair, signal concentrated in blowouts. Do NOT use as model feature.
+- def_epa_per_play (season-level, int_team_season_features): ANCHOR FEATURE — used as prior seed alongside off_epa_per_play. Keep=True. Never dropped.
 
 ## assign_tier Function — Canonical Version
 ```python
@@ -195,9 +222,11 @@ def assign_tier(row):
 
 ### Day 8 — EPA Deep Dive
 - Game-level joint anchor pair: close_game_epa_per_play + close_game_def_epa_per_play, R²=0.772
-- Season-level: off_epa_per_play R²=0.779
+- Season-level anchors (prior seeds): off_epa_per_play R²=0.779, def_epa_per_play (season-level) YoY r=0.393
 - YoY: off r=0.423, def r=0.393 — priors should be wider
-- def_epa_per_play_allowed, last3_off_epa_avg, last3_def_epa_avg — all redundant
+- def_epa_per_play_allowed (GAME-LEVEL): redundant — r=0.971 with close-game anchor pair, signal concentrated in blowouts. This is the game-level column. Do not use as model feature.
+- def_epa_per_play (SEASON-LEVEL): anchor feature for prior seed. Keep=True. Never dropped.
+- last3_off_epa_avg, last3_def_epa_avg — redundant
 
 ### Day 9 — SP+ & Recruiting
 - SP+ partial r=0.399 after EPA, YoY r=0.761 — anchor candidate
@@ -222,9 +251,9 @@ def assign_tier(row):
 - Elevation: flat after EPA control even with correct data. No adjuster warranted.
 - Travel: away_travel_distance_mi supporting-unstable in max stress population only (r=+0.102, YoY r=0.723). 2.4 pt raw disadvantage in max stress population.
 - Timezone: tz_delta <= -2 hrs clears 0.10 but p not significant and n small.
-- Weather (spread): all features < 0.03 partial r after EPA. Completely flat.
-- Weather (over/under): all features < 0.03 partial r vs total scoring after EPA. Completely flat.
-- Weather (individual scoring): temperature r=+0.037 (p=0.003), wind_chill r=+0.037 (p=0.004), heat_index r=+0.038 (p=0.003) — small but significant. Below 0.10 threshold.
+- Weather vs point_differential (spread): all features partial r < 0.03. Redundant for spread.
+- Weather vs total_points (over/under): all features partial r < 0.03. Redundant for over/under.
+- Weather vs individual points_scored (scoring rate): temperature r=+0.037 (p=0.003), wind_chill r=+0.037 (p=0.004), heat_index r=+0.038 (p=0.003) — small but statistically significant. Below 0.10 threshold but real. Evaluate at model build whether to include as weak scoring rate adjusters in log(mu).
 - High wind asymmetry: home scoring -2.94 pts, away scoring -0.55 pts in high wind. Asymmetry 2.38 pts. Spread-relevant but not captured by point_differential partial r. Monitor with 2026 data.
 - Dome: OLS coefficient +0.87 pts total scoring after EPA. Below 2-point threshold. Not a model term.
 - Kickoff × timezone: n=22 early kickoffs — insufficient. Re-evaluate with 2026 data.
@@ -263,7 +292,9 @@ def assign_tier(row):
 
 ## Known Schema Facts — Use Exactly
 - point_differential does not exist — derive as points_scored - points_allowed
-- Defensive EPA column is def_epa_per_play_allowed — not def_epa_per_play
+- Defensive EPA columns — two distinct columns, do not confuse:
+  - def_epa_per_play_allowed in int_game_team_features — GAME-LEVEL, redundant, do not use as model feature
+  - def_epa_per_play in int_team_season_features — SEASON-LEVEL, anchor feature, prior seed
 - int_game_environment has home_team and away_team, not team_name — join on game_id only, then filter f.team_name IN (e.home_team, e.away_team)
 - conference comes from int_team_season_context, joined on team_name and season
 - All numeric columns from psycopg2 return as Decimal — cast entire numeric column list to float64 immediately
@@ -313,3 +344,4 @@ At the end of every session:
 4. Add key findings
 5. Update what the next session must do
 6. Commit: git add docs/session_state.md && git commit -m "docs: update session state after Day X" && git push
+EOF
