@@ -2,7 +2,36 @@ cat > ~/cfb-analytics/docs/session_state.md << 'EOF'
 # CFB Analytics — Session State
 
 ## Last Updated
-2026-05-01
+2026-05-03
+
+---
+
+## ⚠️ CRITICAL — How Notebooks Are Written In This Project
+This rule overrides everything else. Read it before doing anything.
+
+Notebooks are written cell by cell, directly in the conversation, as executable Python code blocks.
+
+- Each cell is written as a code block in the response
+- The user copies it into Jupyter manually and runs it
+- Output is verified before the next cell is written
+- NEVER use nbformat, papermill, or any script to generate notebook files
+- NEVER write a Python script that constructs a notebook object — this is always wrong regardless of framing
+- NEVER batch all cells into a single response — write one cell at a time
+- If a cell produces an error, rewrite the ENTIRE cell — never patch inline
+- Do not proceed to the next cell until the current one has been confirmed to run correctly
+
+This is how Days 8 through 12 were written. Every cell was written individually, run against real data, and verified before the next cell was started. Any deviation from this approach is wrong.
+
+---
+
+## ⚠️ CRITICAL — Confirmation Gate
+Before writing any code, answer these three questions in your own words. Do not quote the session state directly. If you cannot answer from understanding, you have not read the session state carefully enough.
+
+1. The ELO/SP+ correlation is 0.8625. Explain in your own words what the 26% divergence means analytically and why it might add signal to the model beyond SP+ alone.
+2. pregame_elo has 6,478 rows out of 29,472 in int_game_team_features. Explain why this is not a data quality problem and what the correct filtering approach is before any ELO analysis.
+3. Explain why Pac-12 was removed from P4_CONFERENCES and what happened to the actual Pac-12 blue blood programs like Oregon, USC, and UCLA in the dataset.
+
+---
 
 ## Project Goal
 Hierarchical Negative Binomial model predicting score distributions for FBS college football games.
@@ -67,11 +96,12 @@ Questions to answer:
 Decision this day produces: whether ELO divergence and excitement index belong in the model as prior adjusters, and in what form.
 
 Key methodology notes:
-- ELO is only populated for FBS vs FBS games — filter accordingly
+- ELO is only populated for FBS vs FBS games — filter accordingly before any ELO analysis
 - Excitement index is 41% coverage overall but higher within FBS games — check coverage before analysis
 - SP+/ELO divergence requires normalizing both to same scale before computing difference — do this in the notebook, not in dbt
 - Divergence is a team-season level feature — aggregate game-level ELO to season level first
 - Do not add divergence to dbt until it proves to be a valid feature
+- conference does NOT exist in int_game_team_features — join to int_team_season_context on team_name and season to get conference
 
 ## Day 14 — Claude Code Schema Exploration (after Day 13)
 Goal: identify every available feature candidate for style, tempo, matchup, positional strength,
@@ -130,7 +160,7 @@ The exploration must answer:
 - NIL data requires On3 scrape — not built, deprioritized for same reason
 - ELO partially substitutes for these signals — captures effect of roster changes on actual performance
 
-## Data Added This Session (2026-05-01)
+## Data Added (2026-05-01)
 **ELO and excitement index ingested from CFBD API:**
 - Added to raw.games: home_pregame_elo, away_pregame_elo, home_postgame_elo, away_postgame_elo, excitement_index
 - Added to stg_games: all five columns
@@ -172,15 +202,15 @@ The exploration must answer:
 - FCS-to-FBS transitions: excluded — filtered at dbt level
 - recruiting_3yr_avg: high school recruiting only
 - Conference assignment: historically accurate by season from game records
-- Pac-12 in dataset: G5 for all seasons — teams in data are not the real Pac-12
-- FBS Independents: not a pooling group
+- Pac-12 in dataset: G5 for all seasons — the teams in this dataset were never the real Pac-12. Oregon, USC, UCLA moved to Big Ten. Arizona, Arizona State, Colorado, Utah moved to Big 12. Cal and Stanford moved to ACC. The teams labeled Pac-12 in the data are Boise State, Fresno State, Colorado State, San Diego State, Utah State, Texas State, Oregon State, Washington State — a G5-caliber conference.
+- FBS Independents: not a pooling group — Notre Dame routes to P4, UConn routes to G5 by team name
 - No tiers within conferences: team-level parameters handle within-conference spread
 - Three-level hierarchy: league → conference → team — confirmed Day 10
 - No environmental feature as model adjuster for spread — none cleared both thresholds
 - is_dome: not a spread term (residual SD diff 0.69 pts); not an over/under term (OLS coef +0.87 pts after EPA)
 - Weather features (spread): redundant after EPA control — partial r < 0.03 for all features
 - Weather features (over/under): redundant after EPA control — partial r < 0.03 vs total scoring
-- Weather features (individual scoring rate): temperature r=+0.037, wind_chill r=+0.037, heat_index r=+0.038 — small but statistically significant; evaluate at model build whether to include as weak scoring rate adjusters
+- Weather features (individual scoring rate): temperature r=+0.037, wind_chill r=+0.037, heat_index r=+0.038 — small but statistically significant; evaluate at model build whether to include as weak scoring rate adjusters in log(mu)
 - High wind asymmetry: home scoring -2.94 pts vs away -0.55 pts — spread-relevant but insufficient sample; monitor with 2026 data
 - away_travel_distance_mi: supporting-unstable only in max stress population; if included use tight prior near zero
 - Notre Dame pools with ACC for environmental analysis
@@ -196,6 +226,8 @@ The exploration must answer:
 - def_epa_per_play (season-level, int_team_season_features): ANCHOR FEATURE — used as prior seed alongside off_epa_per_play. Keep=True. Never dropped.
 
 ## assign_tier Function — Canonical Version
+Use this exact function in every notebook. Do not modify it.
+
 ```python
 P4_CONFERENCES = {"ACC", "Big 12", "Big Ten", "SEC"}
 
@@ -208,6 +240,8 @@ def assign_tier(row):
         return "P4"
     return "G5"
 ```
+
+Pac-12 falls through to G5. FBS Independents handled by team name conditions. All other teams evaluated on actual season-accurate conference membership.
 
 ## Key Findings From Completed Notebooks
 
@@ -224,8 +258,8 @@ def assign_tier(row):
 - Game-level joint anchor pair: close_game_epa_per_play + close_game_def_epa_per_play, R²=0.772
 - Season-level anchors (prior seeds): off_epa_per_play R²=0.779, def_epa_per_play (season-level) YoY r=0.393
 - YoY: off r=0.423, def r=0.393 — priors should be wider
-- def_epa_per_play_allowed (GAME-LEVEL): redundant — r=0.971 with close-game anchor pair, signal concentrated in blowouts. This is the game-level column. Do not use as model feature.
-- def_epa_per_play (SEASON-LEVEL): anchor feature for prior seed. Keep=True. Never dropped.
+- def_epa_per_play_allowed (GAME-LEVEL in int_game_team_features): redundant — r=0.971 with close-game anchor pair, signal concentrated in blowouts. Do not use as model feature.
+- def_epa_per_play (SEASON-LEVEL in int_team_season_features): anchor feature for prior seed. Keep=True. Never dropped.
 - last3_off_epa_avg, last3_def_epa_avg — redundant
 
 ### Day 9 — SP+ & Recruiting
@@ -254,7 +288,7 @@ def assign_tier(row):
 - Weather vs point_differential (spread): all features partial r < 0.03. Redundant for spread.
 - Weather vs total_points (over/under): all features partial r < 0.03. Redundant for over/under.
 - Weather vs individual points_scored (scoring rate): temperature r=+0.037 (p=0.003), wind_chill r=+0.037 (p=0.004), heat_index r=+0.038 (p=0.003) — small but statistically significant. Below 0.10 threshold but real. Evaluate at model build whether to include as weak scoring rate adjusters in log(mu).
-- High wind asymmetry: home scoring -2.94 pts, away scoring -0.55 pts in high wind. Asymmetry 2.38 pts. Spread-relevant but not captured by point_differential partial r. Monitor with 2026 data.
+- High wind asymmetry: home scoring -2.94 pts, away scoring -0.55 pts in high wind. Asymmetry 2.38 pts. Monitor with 2026 data.
 - Dome: OLS coefficient +0.87 pts total scoring after EPA. Below 2-point threshold. Not a model term.
 - Kickoff × timezone: n=22 early kickoffs — insufficient. Re-evaluate with 2026 data.
 
@@ -292,16 +326,16 @@ def assign_tier(row):
 
 ## Known Schema Facts — Use Exactly
 - point_differential does not exist — derive as points_scored - points_allowed
-- Defensive EPA columns — two distinct columns, do not confuse:
+- Two distinct defensive EPA columns — do not confuse:
   - def_epa_per_play_allowed in int_game_team_features — GAME-LEVEL, redundant, do not use as model feature
   - def_epa_per_play in int_team_season_features — SEASON-LEVEL, anchor feature, prior seed
+- conference does NOT exist in int_game_team_features — join to int_team_season_context on team_name and season to get conference
 - int_game_environment has home_team and away_team, not team_name — join on game_id only, then filter f.team_name IN (e.home_team, e.away_team)
-- conference comes from int_team_season_context, joined on team_name and season
 - All numeric columns from psycopg2 return as Decimal — cast entire numeric column list to float64 immediately
 - Connection: host=127.0.0.1 port=5455 dbname=postgres user=postgres password=postgres
-- Boolean columns (is_dome, is_high_wind, is_precipitation) return as Python objects with None values — use .map(lambda x: 1 if x is True else (0 if x is False else np.nan)).astype(float) before partial_corr
+- Boolean columns (is_dome, is_high_wind, is_precipitation) return as Python objects with None values — use .map(lambda x: 1 if x is True else (0 if x is False else np.nan)).astype(float)
 - opp_sp_rating_at_game_time exists in int_game_team_features — not yet fully investigated
-- pregame_elo, opponent_pregame_elo, postgame_elo, excitement_index now exist in int_game_team_features
+- pregame_elo, opponent_pregame_elo, postgame_elo, excitement_index exist in int_game_team_features
 
 ## Source Tables
 - int.int_game_team_features — game-level team performance including pregame_elo, excitement_index
@@ -309,7 +343,7 @@ def assign_tier(row):
 - int.int_team_season_context — season-level team context including conference
 - int.int_team_season_features — season-level team features, 534 rows, FBS only
 
-## Connection Pattern (psycopg2 only)
+## Connection Pattern (psycopg2 only — no SQLAlchemy passed to pandas)
 ```python
 conn = psycopg2.connect(
     host='127.0.0.1', port=5455, dbname='postgres',
@@ -333,8 +367,9 @@ df[numeric_cols] = df[numeric_cols].astype(float)
 7. Cast boolean columns using .map(lambda x: 1 if x is True else (0 if x is False else np.nan)).astype(float)
 8. Do not rewrite verified cells
 9. Do not close the DB connection until the notebook is complete
-10. If a required column is not in the schema output, stop and say so
+10. If a required column is not in the schema output, stop and say so — do not proceed
 11. Use the canonical assign_tier function — do not modify it
+12. Never use nbformat, papermill, or any script to generate notebook files
 
 ## How To Update This File
 At the end of every session:
