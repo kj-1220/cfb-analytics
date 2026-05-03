@@ -1,0 +1,4 @@
+feature,partial_r,p_value,yoy_stability_r,keep,notes
+elo_sp_divergence,0.0585,0.2442,0.1081,TBD — see partial r vs 0.10 threshold,Normalized ELO minus SP+ z-score; compute in notebook; add to dbt only if keep=True
+avg_excitement_index,-0.0335,0.5049,n/a,False,"Partial r=-0.034 after EPA control — no signal, below 0.10 threshold"
+pct_games_high_excitement,-0.0398,0.4282,n/a,False,"Partial r=-0.040 after EPA control — no signal, below 0.10 threshold"

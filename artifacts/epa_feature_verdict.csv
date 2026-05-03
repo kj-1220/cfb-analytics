@@ -1,8 +1,6 @@
-feature,role,reason
-off_epa_per_play,anchor,"Season-level offensive EPA. R²=0.779 vs avg points_scored. YoY r=0.423 95%CI[-0.090,0.093] <0.60 → wider prior."
-def_epa_per_play,anchor,"Season-level defensive EPA. YoY r=0.393 95%CI[-0.097,0.091] <0.60 → wider prior."
-close_game_epa_per_play,anchor,Game-level garbage-time filtered offensive EPA. Joint model anchor (Q4). R²=0.772 jointly with close_game_def_epa_per_play vs point_diff.
-close_game_def_epa_per_play,anchor,Game-level garbage-time filtered defensive EPA. Built Day 8 — symmetric counterpart to close_game_epa_per_play. R²=0.624 vs points_allowed (worse than unfiltered ΔR²=-0.0135). Joint model anchor (Q4).
-def_epa_per_play_allowed,redundant,Q1: |r|=0.971>0.85 with EPA pair anchor. Unlikely independent contribution.
-last3_off_epa_avg,redundant,Q4: residual |r|=0.0860≤0.1 — variance already captured by close-game EPA pair.
-last3_def_epa_avg,redundant,Q4: residual |r|=0.0540≤0.1 — variance already captured by close-game EPA pair.
+feature,spread_partial_r,spread_signal,ou_partial_r,ou_signal,variance_signal_spread,variance_signal_ou,traj_spread_game1_r,traj_ou_game1_r,traj_spread_holds_game1,traj_ou_holds_game1,yoy_r,yoy_stable,is_prior_seed,verdict
+close_game_epa_per_play,0.6505,True,0.4282,True,True,False,0.5845,0.4338,True,True,0.4151,False,False,"anchor candidate — game-level predictor, spread + O/U signal, holds at conf game 1"
+close_game_def_epa_per_play,-0.649,True,0.4507,True,True,False,-0.5866,0.4707,True,True,0.3883,False,False,"anchor candidate — game-level predictor, spread + O/U signal, holds at conf game 1"
+def_epa_per_play_allowed,-0.6418,True,0.4673,True,True,False,-0.5731,0.4966,True,True,0.3883,False,False,"redundant — collinear with close_game_def_epa_per_play (r=0.9775), zero residual signal"
+last3_off_epa_avg,0.2727,True,0.0898,False,False,False,0.2702,-0.0097,True,False,,False,False,"supporting — in-season only, not opponent-adjusted, no prior seed"
+last3_def_epa_avg,-0.2164,True,0.1016,True,False,False,-0.1749,0.116,True,True,,False,False,"supporting — in-season only, not opponent-adjusted, no prior seed"
