@@ -82,23 +82,21 @@ Every verdict must state separately:
 ## ⚠️ CRITICAL — Confirmation Gate
 Rewritten each session to reflect what the next notebook must understand.
 
-**Next notebook: Days 14–16 — Style, Tempo, and Game Script**
+**Next notebook: Day 16 — Style Archetypes and Matchup Interaction Effects**
 
 Answer these questions in your own words before writing any code:
 
-1. Style and tempo features measure how a team plays — pass rate, pace, run/pass mix.
-   Explain why these features need to be evaluated as matchup deltas rather than
-   absolute team values, and what that means for how the partial r test should be
-   constructed.
+1. Day 15 showed every linear delta is redundant after EPA and SP+ control. Explain
+   in your own words why that result is the motivation for clustering rather than the
+   conclusion that style and tempo don't matter.
 
-2. Game script features (game_script, game_script_avg_margin) are partially
-   retrospective — they reflect how a game unfolded. Explain what the correct
-   pre-game knowable version of game script is and how it should be constructed
-   before any analysis.
+2. The clustering feature space excludes redzone metrics, time of possession, and sack
+   rate. Explain why YoY instability is the disqualifying criterion for clustering
+   dimensions, and what happens to archetype validity if you include unstable metrics.
 
-3. The style/tempo analysis uses a delta approach first, clustering second. Explain
-   what that means in terms of what gets tested in Day 15 versus Day 16, and why
-   that sequencing matters.
+3. The notebook assigns offensive archetypes and defensive archetypes separately.
+   Explain what the matchup interaction variable is, how it is constructed, and what
+   it tests that the Day 15 linear delta could not.
 
 ---
 
@@ -137,7 +135,7 @@ Goes live: September 24, 2026. Date marker only.
 | 12 | eda_07_momentum_rolling_features.ipynb | ✅ complete | See momentum findings below |
 | 13 | eda_08_elo_excitement.ipynb | ✅ complete | See ELO/excitement findings below |
 | 14 | Claude Code session | ✅ complete | Play-by-play schema verified. 31 new candidates added. Field zone derivable via yards_to_goal. Spatial/directional features permanently closed. raw.odds confirmed as 2026 live validation target only — no historical closing lines. |
-| 15 | eda_09_style_tempo_delta.ipynb | ❌ not built | Style & tempo delta analysis — signal identification |
+| 15 | eda_09_style_tempo_delta.ipynb | ✅ complete | All 17 style/tempo deltas redundant after EPA+SP+ control. No linear matchup signal. YoY stability poor (max r=0.567). Clustering warranted. |
 | 16 | eda_10_style_archetypes.ipynb | ❌ not built | Style archetype clustering + matchup interaction effects |
 | 17 | eda_11_game_script.ipynb | ❌ not built | Game script & close game signals |
 | 18 | eda_12_evaluation_framework.ipynb | ❌ not built | Written evaluation checklist for model sign-off |
@@ -168,12 +166,17 @@ Gold layer begins Day 34.
 ---
 
 ## What The Next Session Must Build
-Days 15–17: Style, Tempo, Game Script analysis.
+Day 16: eda_10_style_archetypes.ipynb — Style archetype clustering and matchup
+interaction effects.
 
-Day 14 schema exploration is complete. Day 15 builds eda_09_style_tempo_delta.ipynb.
-All 31 Day 14 candidates are in candidate_features.csv with authoritative_table=raw.plays.
-Every candidate must be computed per game from raw.plays and evaluated as a matchup delta
-(team A offense vs. team B defense) using the standard three-test methodology.
+Handoff document produced at end of Day 15 session. Key constraints:
+- Cluster on 15 stable dimensions only (YoY r >= 0.40 from Day 15 results)
+- Use season-level averages from int_team_season_features — not rolling windows
+- Cluster offense and defense separately
+- Test matchup interaction effects (off_archetype x def_archetype) against spread
+  and O/U after EPA + SP+ control using same partial r framework as Day 15
+- FBS conference games only — same join pattern as Day 15
+- All three outcome signals required: spread, O/U, variance
 
 ---
 
@@ -230,21 +233,25 @@ Every candidate must be computed per game from raw.plays and evaluated as a matc
 
 ### Day 14 — Play-by-Play Schema Exploration
 - raw.plays grain: only play-level table. 1,073,640 plays, 6,204 games, 2022–2025. No standalone drive table — drive_id and drive_number enable drive aggregation. PPA: 75.7% overall, 99.76% on scrimmage plays.
-- Computable per game from raw.plays: success rate (overall, rush/pass splits, std_downs/pass_downs splits), stuff rate (yards_gained<=0 on rush), explosive rate (20+ and 10+ yard thresholds, rush and pass separately), line yards per rush (yards_gained formula), sack rate (Sack play_type / pass attempts), points per opportunity (drive_id + scoring boolean), EPA splits (rush/pass and std_downs/pass_downs via ppa + play_type + down/distance), time of possession (game clock delta per drive, verified), field zone success and EPA (yards_to_goal buckets).
-- Field zone: computable via yards_to_goal — red zone (<=10 yards), scoring zone (11–25), own half (26–50), deep own (51+). Verified with real PPA and explosive rates.
-- Spatial features: no hash position, no play direction columns, no boundary/field side anywhere in schema. Pass direction in play_text for 10.27% of pass plays — inconsistent formatting, not usable as a structured feature. Rush direction in play_text for 0.00%.
-- Permanently closed: air yards, aDOT, YAC, time to throw, pressure rate, block win rates, hash position, play direction.
-- Player tagging: none. No player ID, position, or roster tables in any schema.
-- Havoc: DB havoc not derivable game-by-game — passes defended not in raw.plays. Season-level def_havoc_* columns are the only complete source. Sacks + interceptions + forced fumbles are a proxy but undercount vs. CFBD definition.
-- Recruiting by position: permanently closed — raw.recruiting has no position column. Aggregate composite only.
-- Opponent at play level: defense column in raw.plays = opponent. Derivable for all 6,204 games.
-- raw.odds: 20 rows, 11 games, August–September 2026 only (Bovada, DraftKings, FanDuel). No historical closing lines. Live validation target — model predictions compared against these lines.
-- raw.games: conference_game boolean present for all rows. home_win_prob available 2022–2024 only (absent in 2025). attendance sparse.
+- Computable per game from raw.plays: success rate (overall, rush/pass splits, std_downs/pass_downs splits), stuff rate (yards_gained<=0 on rush), explosive rate (20+ and 10+ yard thresholds), line yards per rush, sack rate, points per opportunity, EPA splits, time of possession, field zone success and EPA.
+- Spatial features: permanently closed — no hash position, no play direction, no boundary/field side anywhere in schema.
+- Permanently closed: air yards, aDOT, YAC, time to throw, pressure rate, block win rates, hash position, play direction, player tagging.
+- raw.odds: 2026 season only — no historical closing lines. Live validation target only.
 - 31 new candidates added to candidate_features.csv — all raw.plays-derived, game-level computable.
+
+### Day 15 — Style and Tempo Delta Analysis
+- Population: 2,155 FBS conference game matchups, 2022–2025. P4=1,039, G5=1,116.
+- Result: ALL 17 style/tempo deltas redundant after EPA anchor pair + SP+ control. No feature cleared 0.08 threshold on spread or O/U. No variance signal on any feature.
+- Highest spread partial r: delta_off_epa_pass=0.051. Highest O/U: delta_off_pts_per_opportunity=0.053. Both below threshold.
+- Trajectory: 9 of 17 weaken across season arc. 7 stable. 1 strengthens.
+- YoY stability: no metric reached stable threshold (r>=0.70). Best: off_success_rate_std_downs r=0.567. Redzone metrics, time_of_possession, sack_rate all below r=0.10 — excluded from Day 16 clustering space.
+- Conference sign flips observed: delta_rush_rate_pass_downs SEC r=-0.091 vs American Athletic r=+0.095. delta_off_success_rate_pass SEC r=+0.161 vs Conference USA r=-0.076. Suggests conference-specific style effects linear coefficients cannot model.
+- Conclusion: linear deltas wrong representation. Clustering warranted. Style and tempo not dead — representation needs to change.
+- Stable dimensions for Day 16 clustering (YoY r>=0.40): off_success_rate_std_downs (0.567), rush_rate_std_downs (0.535), def_pts_per_opportunity_allowed (0.526), off_success_rate_rush (0.524), off_pts_per_opportunity (0.516), off_success_rate_pass (0.492), off_stuff_rate (0.483), rush_rate_pass_downs (0.479), off_line_yards_per_rush (0.472), off_explosive_rate_10 (0.443), off_epa_rush (0.436), def_success_rate_rush (0.428), def_success_rate_std_downs (0.420), def_epa_rush_allowed (0.400), def_stuff_rate_allowed (0.396).
 
 ---
 
-## Decisions Confirmed by EDA (add to locked decisions)
+## Decisions Confirmed by EDA
 - away_elevation_delta_ft: model as threshold-activated (>=2000ft), not linear
 - away_travel_distance_mi: model as threshold-activated (>=1500mi), not linear
 - away_tz_delta_hrs: model as threshold-activated (abs>=2hr), not linear
@@ -253,6 +260,9 @@ Every candidate must be computed per game from raw.plays and evaluated as a matc
 - Conference-specific dispersion: start single parameter, revisit in posterior checks
 - ELO/SP+ divergence: compute in notebook first, not in dbt until model confirms
 - excitement_index: retrospective — prior-season team average is not a usable prior seed
+- Style/tempo linear deltas: ALL redundant after EPA+SP+ control — do not model as linear features
+- Style/tempo clustering: cluster on 15 stable dimensions (YoY r>=0.40) using season averages only
+- Redzone metrics, time of possession, sack rate: excluded from clustering space (YoY r<0.30)
 
 ---
 
@@ -270,9 +280,7 @@ Every candidate must be computed per game from raw.plays and evaluated as a matc
 - FCS-to-FBS transitions: excluded — filtered at dbt level
 - recruiting_3yr_avg: high school recruiting only
 - Conference assignment: historically accurate by season from game records
-- Pac-12 in dataset: G5 for all seasons — Oregon/USC/UCLA moved to Big Ten;
-  Arizona/Arizona State/Colorado/Utah moved to Big 12; Cal/Stanford moved to ACC.
-  Teams labeled Pac-12 in data are the remnant G5-caliber conference.
+- Pac-12 in dataset: G5 for all seasons — Oregon/USC/UCLA moved to Big Ten; Arizona/Arizona State/Colorado/Utah moved to Big 12; Cal/Stanford moved to ACC. Teams labeled Pac-12 in data are the remnant G5-caliber conference.
 - FBS Independents: not a pooling group — Notre Dame routes to P4, UConn routes to G5 by team name
 - No tiers within conferences: team-level parameters handle within-conference spread
 - Three-level hierarchy: league → conference → team
@@ -285,13 +293,16 @@ Every candidate must be computed per game from raw.plays and evaluated as a matc
 - HFA: league-level baseline + team-level deviations. No conference-level HFA layer.
 - opp_sp_rating_at_game_time: control variable only, not a model feature
 - Hash position: does not exist in schema — permanently closed, never revisit
-- Play direction (pass left/right/middle, rush direction): no structured column — play_text coverage 10% pass / 0% rush — permanently closed
+- Play direction (pass left/right/middle, rush direction): no structured column — permanently closed
 - Air yards, aDOT, YAC, time to throw, pressure rate, block win rates: do not exist anywhere in schema — permanently closed
 - Recruiting by position group: raw.recruiting has no position column — permanently closed
 - PFF grades: no PFF table in any schema — permanently closed
 - DB havoc game-level derivation: passes defended not in raw.plays — use season-level def_havoc_db only
 - raw.odds: 2026 target season only — no historical closing lines exist
 - Havoc columns: off_havoc_* excluded from all int layers — only def_havoc_* used
+- Style/tempo linear deltas: ALL 17 redundant — do not model as linear features
+- Rolling windows for clustering: do not use — use season averages only
+- Clustering dimensions: exclude redzone metrics, time of possession, sack rate (YoY r<0.30)
 
 ---
 
@@ -305,6 +316,7 @@ Every candidate must be computed per game from raw.plays and evaluated as a matc
 | artifacts/environment_verdict.csv | ✅ valid | Day 11 — correct methodology |
 | artifacts/momentum_verdict.csv | ✅ valid | Day 12 — correct methodology |
 | artifacts/elo_excitement_verdict.csv | ✅ valid | Day 13 — correct methodology |
+| artifacts/style_tempo_verdict.csv | ✅ valid | Day 15 — all 17 deltas redundant after EPA+SP+ control |
 
 ---
 
@@ -318,6 +330,12 @@ Every candidate must be computed per game from raw.plays and evaluated as a matc
 - pregame_elo YoY r = 0.854 — strong (game-level predictor, not gating)
 - recruiting_3yr_avg YoY r = 0.975 — extremely stable (prior seed)
 - excitement_index YoY r = 0.134 — extremely unstable (not usable as prior)
+- off_success_rate_std_downs YoY r = 0.567 — best style/tempo metric (moderate)
+- rush_rate_std_downs YoY r = 0.535 — moderate
+- off_success_rate_rush YoY r = 0.524 — moderate
+- time_of_possession YoY r = 0.076 — extremely unstable
+- off_success_rate_redzone YoY r = 0.071 — extremely unstable
+- def_sack_rate YoY r = 0.223 — unstable
 
 ---
 
@@ -328,7 +346,7 @@ Every candidate must be computed per game from raw.plays and evaluated as a matc
   - def_epa_per_play_allowed in int_game_team_features — GAME-LEVEL, redundant
   - def_epa_per_play in int_team_season_features — SEASON-LEVEL, anchor feature
 - conference does NOT exist in int_game_team_features — join to
-  int_team_season_context on team_name and season to get conference
+  int_team_season_features on team_name and season to get conference
 - int_game_environment has home_team and away_team, not team_name — join on game_id
   only, then filter f.team_name IN (e.home_team, e.away_team)
 - All numeric columns from psycopg2 return as Decimal — cast entire numeric column
@@ -354,6 +372,10 @@ Every candidate must be computed per game from raw.plays and evaluated as a matc
 - raw.odds: 2026 season only (Bovada, DraftKings, FanDuel) — not historical
 - raw.games: conference_game boolean available for all rows; home_win_prob available
   2022–2024 only (absent 2025); attendance sparse (3,220 / 14,744 rows)
+- CRITICAL JOIN PATTERN: conference and sp_rating come from int_team_season_features
+  joined on team_name + season. raw.games home_team/away_team strings do NOT match
+  int_team_season_features team_name. Always join through int_game_team_features
+  team_name as the bridge — never join team name columns directly from raw.games.
 
 ---
 
@@ -361,8 +383,9 @@ Every candidate must be computed per game from raw.plays and evaluated as a matc
 - int.int_game_team_features — game-level team performance including pregame_elo,
   excitement_index
 - int.int_game_environment — game-level venue and weather
-- int.int_team_season_context — season-level team context including conference
-- int.int_team_season_features — season-level team features, 534 rows, FBS only
+- int.int_team_season_context — season-level team context
+- int.int_team_season_features — season-level team features, FBS only, includes
+  conference and sp_rating (authoritative source for both)
 - stg.stg_game_weather — kickoff_hour available here, not yet in int layer
 
 ---
@@ -390,17 +413,14 @@ df[numeric_cols] = df[numeric_cols].astype(float)
 4. Write complete cells only — never partial fixes or incremental edits
 5. Use existing helpers — never redefine logic that already exists in the notebook
 6. Cast all Decimal columns to float64 immediately after loading
-7. Cast boolean columns using .map(lambda x: 1 if x is True else (0 if x is False
-   else np.nan)).astype(float)
+7. Cast boolean columns using .map(lambda x: 1 if x is True else (0 if x is False else np.nan)).astype(float)
 8. Do not rewrite verified cells
 9. Do not close the DB connection until the notebook is complete
 10. If a required column is not in the schema output, stop and say so — do not proceed
 11. Use the canonical assign_tier function — do not modify it
 12. Never use nbformat, papermill, or any script to generate notebook files
-13. Every verdict must report spread signal, over/under signal, and moneyline signal
-    separately — never collapse into a single verdict
-14. Conference stratification is mandatory for every partial r test — full population,
-    P4, G5, and each individual conference. Never issue a verdict from global analysis only.
+13. Every verdict must report spread signal, over/under signal, and moneyline signal separately — never collapse into a single verdict
+14. Conference stratification is mandatory for every partial r test — full population, P4, G5, and each individual conference. Never issue a verdict from global analysis only.
 
 ---
 
@@ -432,5 +452,4 @@ At the end of every session:
 4. Add key findings — spread, over/under, and moneyline reported separately
 5. Rewrite the confirmation gate to reflect what the next session must understand
 6. Update what the next session must build
-7. Commit: git add docs/session_state.md && git commit -m "docs: update session
-   state after Day X" && git push
+7. Commit: git add docs/session_state.md && git commit -m "docs: update session state after Day X" && git push
