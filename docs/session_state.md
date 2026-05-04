@@ -229,17 +229,18 @@ Every candidate must be computed per game from raw.plays and evaluated as a matc
 - prior_avg_excitement_index: redundant — YoY r=0.134 (extremely unstable), cannot function as prior seed. Late-season O/U signal (games 9-12, r=0.192) insufficient — n=169 and does not hold earlier. Conference trajectory inconsistent.
 
 ### Day 14 — Play-by-Play Schema Exploration
-**Play-by-play grain:** raw.plays is the only play-level table. 1,073,640 plays, 6,204 games, 2022–2025. No drive-level standalone table — drive_id and drive_number in raw.plays enable drive aggregation. PPA coverage: 75.7% overall, 99.76% on scrimmage plays.
-**Style & tempo (verified computable per game from raw.plays):** success rate (overall, rush/pass splits, std_downs/pass_downs splits), stuff rate (rush yards_gained<=0), explosive rate (20+ and 10+ yard thresholds), line yards per rush (formula on yards_gained), sack rate (Sack play_type / pass attempts), points per opportunity (drive_id + scoring boolean), EPA splits (rush/pass, std_downs/pass_downs via ppa + play_type + down/distance), time of possession (game clock delta per drive, verified), field zone success and EPA (yards_to_goal buckets).
-**Spatial features:** No hash position, no play direction columns, no boundary/field side. Pass direction in play_text for 10.27% of pass plays — inconsistent formatting, not usable. Rush direction in play_text for 0.00%. Field zone IS computable via yards_to_goal (red zone ≤10 yards, scoring zone 11-25, own half 26-50, deep own 51+).
-**Not available (permanently closed):** Air yards, aDOT, YAC, time to throw, pressure rate, block win rates, hash position, play direction.
-**Player tagging:** None. No player ID, position, or roster tables anywhere in schema.
-**Havoc:** DB havoc not derivable game-by-game — passes defended not in raw.plays. Season-level def_havoc_* columns remain the only complete source. Proxy possible (sacks + interceptions + forced fumbles) but undercounts vs. CFBD definition.
-**Recruiting by position:** Not available — raw.recruiting has no position column. Aggregate composite only.
-**Opponent at play level:** offense/defense columns in raw.plays — opponent fully derivable for all 6,204 games.
-**raw.odds:** 20 rows, 11 games, August–September 2026 only (Bovada, DraftKings, FanDuel). No historical closing lines. This is the live validation target — model predictions compared against these lines.
-**raw.games:** conference_game boolean present for all games. home_win_prob available for 41% of rows (2022–2024 only, absent in 2025). attendance sparse.
-**31 new candidates added to candidate_features.csv** (all raw.plays-derived, game-level computable).
+- raw.plays grain: only play-level table. 1,073,640 plays, 6,204 games, 2022–2025. No standalone drive table — drive_id and drive_number enable drive aggregation. PPA: 75.7% overall, 99.76% on scrimmage plays.
+- Computable per game from raw.plays: success rate (overall, rush/pass splits, std_downs/pass_downs splits), stuff rate (yards_gained<=0 on rush), explosive rate (20+ and 10+ yard thresholds, rush and pass separately), line yards per rush (yards_gained formula), sack rate (Sack play_type / pass attempts), points per opportunity (drive_id + scoring boolean), EPA splits (rush/pass and std_downs/pass_downs via ppa + play_type + down/distance), time of possession (game clock delta per drive, verified), field zone success and EPA (yards_to_goal buckets).
+- Field zone: computable via yards_to_goal — red zone (<=10 yards), scoring zone (11–25), own half (26–50), deep own (51+). Verified with real PPA and explosive rates.
+- Spatial features: no hash position, no play direction columns, no boundary/field side anywhere in schema. Pass direction in play_text for 10.27% of pass plays — inconsistent formatting, not usable as a structured feature. Rush direction in play_text for 0.00%.
+- Permanently closed: air yards, aDOT, YAC, time to throw, pressure rate, block win rates, hash position, play direction.
+- Player tagging: none. No player ID, position, or roster tables in any schema.
+- Havoc: DB havoc not derivable game-by-game — passes defended not in raw.plays. Season-level def_havoc_* columns are the only complete source. Sacks + interceptions + forced fumbles are a proxy but undercount vs. CFBD definition.
+- Recruiting by position: permanently closed — raw.recruiting has no position column. Aggregate composite only.
+- Opponent at play level: defense column in raw.plays = opponent. Derivable for all 6,204 games.
+- raw.odds: 20 rows, 11 games, August–September 2026 only (Bovada, DraftKings, FanDuel). No historical closing lines. Live validation target — model predictions compared against these lines.
+- raw.games: conference_game boolean present for all rows. home_win_prob available 2022–2024 only (absent in 2025). attendance sparse.
+- 31 new candidates added to candidate_features.csv — all raw.plays-derived, game-level computable.
 
 ---
 
