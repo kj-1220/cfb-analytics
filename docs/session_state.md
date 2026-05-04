@@ -5,26 +5,6 @@
 
 ---
 
-## ⚠️ CRITICAL — What This Model Does
-This model predicts spread, moneyline, and over/under for any FBS conference game.
-It predicts each team's score distribution for a specific upcoming game. Spread,
-moneyline, and over/under are derived from those two score distributions via Monte
-Carlo simulation.
-
-Goes live: September 24, 2026. This is a date marker only. The model predicts every
-FBS conference game from that date forward — for the remainder of the 2026 season
-and every season after. It is not built for any specific game or matchup. It must
-predict any FBS conference game credibly.
-
-Every feature must earn its place by improving prediction of a specific game outcome.
-Season-level aggregations and year-over-year correlations are prior construction tools
-only — they inform how confident the model should be in its team quality estimates
-going into a game. They are not the end goal. The end goal is: given two specific
-teams playing a specific game, what is the distribution of scores, and what does that
-imply for spread, moneyline, and over/under.
-
----
-
 ## ⚠️ CRITICAL — How Notebooks Are Written In This Project
 This rule overrides everything else. Read it before doing anything.
 
@@ -38,44 +18,61 @@ Python code blocks.
 - NEVER write a Python script that constructs a notebook object
 - NEVER batch all cells into a single response — write one cell at a time
 - If a cell produces an error, rewrite the ENTIRE cell — never patch inline
-- Do not proceed to the next cell until the current one has been confirmed to run correctly
+- Do not proceed to the next cell until the current one has been confirmed
+
+---
+
+## ⚠️ CRITICAL — What This Model Does
+This model predicts spread, moneyline, and over/under for any FBS conference game.
+It predicts each team's score distribution for a specific upcoming game. Spread,
+moneyline, and over/under are derived from those two score distributions via Monte
+Carlo simulation.
+
+Goes live: September 24, 2026. This is a date marker only. The model predicts every
+FBS conference game from that date forward. It is not built for any specific game or
+matchup. It must predict any FBS conference game credibly.
+
+Every feature must earn its place by improving prediction of a specific game outcome.
+Season-level aggregations and YoY correlations are prior construction tools only.
+The end goal is: given two specific teams playing a specific game, what is the
+distribution of scores, and what does that imply for spread, moneyline, and over/under.
 
 ---
 
 ## ⚠️ CRITICAL — Correct EDA Methodology
 Every feature must be evaluated against all three tests. All three together constitute
-a complete verdict. A feature that passes only one or two tests does not have a
-complete verdict.
+a complete verdict.
 
 **Test 1 — Game-level prediction accuracy**
 Does this feature improve prediction of:
 - Point differential (spread and moneyline signal)
 - Total points scored (over/under signal)
 - Score distribution variance (moneyline signal specifically)
-
-These are three separate tests. A feature can be relevant for spread and irrelevant
-for over/under, or vice versa. They must be evaluated and reported separately.
+These are three separate tests. Report separately. Never collapse into one verdict.
 
 **Test 2 — Within-season trajectory**
-Does the predictive improvement from Test 1 hold across the arc of a conference
-season:
-- Conference game 1: only the prior exists, no in-season evidence
-- Conference games 2–4: posterior beginning to develop
-- Conference games 5–8: posterior well-informed
-- Conference games 9–12: fully informed posterior
-
-A feature that only works with a full season of data is not useful. The model must
-predict conference game 1 with nothing but the prior. Features must be evaluated
-at each stage of that trajectory.
+Does the predictive improvement hold across the conference season arc:
+- Conference game 1: only the prior exists
+- Conference games 2–4: posterior developing
+- Conference games 5–8: posterior informed
+- Conference games 9–12: fully informed
+Rolling features are null at conf game 1 — trajectory starts at conf game 2.
 
 **Test 3 — YoY stability**
-Is the feature stable enough year over year to build a reliable prior from, so the
-model is not starting blind each season.
+Is the feature stable enough YoY to build a reliable prior from.
+YoY stability is the GATING criterion for prior seed features only.
+Game-level predictors (close-game EPA, ELO) are not gated by YoY stability.
+
+**Conference stratification is mandatory for every test.**
+Conference is the primary grouping structure. Every partial r table must include:
+full population, P4, G5, and each individual conference. A feature that earns a
+verdict in the SEC does not automatically earn it in the Big 12. Flat global analyses
+are wrong and incomplete.
 
 **Output separation requirement**
 Every verdict must state separately:
-- Spread signal: yes/no, partial r, threshold cleared
-- Over/under signal: yes/no, partial r, threshold cleared
+- Spread signal: yes/no, partial r, threshold cleared, conferences where signal holds
+- Over/under signal: yes/no, partial r, threshold cleared, conferences where signal holds
 - Moneyline variance signal: yes/no, finding
 - Within-season trajectory: holds / degrades / only works late season
 - YoY stability: r value, stable/unstable verdict
@@ -83,39 +80,33 @@ Every verdict must state separately:
 ---
 
 ## ⚠️ CRITICAL — Confirmation Gate
-This section is specific to the next notebook being built. It is rewritten at the
-end of every session to reflect what the next session must understand before
-touching anything.
+Rewritten each session to reflect what the next notebook must understand.
 
-**Next notebook: eda_03_epa_deep_dive.ipynb (Day 8 rebuild)**
+**Next notebook: Days 14–16 — Style, Tempo, and Game Script**
 
-Answer these three questions in your own words before writing any code. Do not quote
-the session state. If you cannot answer from understanding, you have not read
-carefully enough.
+Answer these questions in your own words before writing any code:
 
-1. The EPA deep dive must evaluate features against spread, over/under, and moneyline
-separately. Explain specifically how close_game_epa_per_play could affect spread
-differently than it affects total points scored — give a concrete example of a game
-scenario where it would predict one but not the other.
+1. Style and tempo features measure how a team plays — pass rate, pace, run/pass mix.
+   Explain why these features need to be evaluated as matchup deltas rather than
+   absolute team values, and what that means for how the partial r test should be
+   constructed.
 
-2. The within-season trajectory test matters because this model predicts conference
-game 1 with only the prior. Explain what data is actually available to the model at
-conference game 1 for an EPA feature, and why that changes how you evaluate whether
-EPA belongs in the model.
+2. Game script features (game_script, game_script_avg_margin) are partially
+   retrospective — they reflect how a game unfolded. Explain what the correct
+   pre-game knowable version of game script is and how it should be constructed
+   before any analysis.
 
-3. The old EPA notebook found R²=0.772 for the close-game EPA anchor pair against
-point differential. Explain why that number alone is not sufficient to conclude EPA
-belongs in the model under the correct methodology, and what additional tests are
-required before a verdict can be issued.
+3. The style/tempo analysis uses a delta approach first, clustering second. Explain
+   what that means in terms of what gets tested in Day 15 versus Day 16, and why
+   that sequencing matters.
 
 ---
 
 ## Project Goal
 Hierarchical Negative Binomial model predicting score distributions for any FBS
 conference game.
-Outputs: spread, moneyline, over/under derived via Monte Carlo simulation from each
-team's predicted score distribution.
-Goes live: September 24, 2026. Date marker only — not a target game.
+Outputs: spread, moneyline, over/under derived via Monte Carlo simulation.
+Goes live: September 24, 2026. Date marker only.
 
 ---
 
@@ -123,12 +114,13 @@ Goes live: September 24, 2026. Date marker only — not a target game.
 - Three-level hierarchy: league → conference → team (confirmed Day 10)
 - Likelihood: Negative Binomial (confirmed Day 6)
 - Model form: points ~ NegBinom(mu, r), log(mu) = team_attack + opponent_defense +
-  home_advantage + ...
-- Dispersion parameter r ~ HalfNormal(), fit from data — should vary by conference
-  given VMR range 5.2–8.1
-- Priors seeded from: SP+ preseason rating, 3-year recruiting composite, transfer
-  portal net, NIL proxy
-- Conference-level pooling handles small sample size (12 games/team)
+  home_advantage + environmental_adjusters + ...
+- Dispersion parameter r ~ HalfNormal(), start with single parameter, add
+  conference-specific r if posterior predictive checks show systematic miscalibration
+- Priors seeded from: SP+ preseason rating, 3-year recruiting composite (conference-
+  specific weight), pregame_elo (game-level, not prior seed)
+- Conference-level pooling provides regularization (ICC marginal 0.02–0.05 but
+  pooling still improves small-sample estimates)
 - Built in PyMC
 
 ---
@@ -138,12 +130,12 @@ Goes live: September 24, 2026. Date marker only — not a target game.
 |---|---|---|---|
 | 6 | eda_01_scoring_distributions.ipynb | ✅ complete | Negative Binomial likelihood — overdispersion confirmed, VMR 3.56–8.05 |
 | 7 | eda_02_feature_inventory.ipynb | ✅ complete | 154 candidate features locked in candidate_features.csv |
-| 8 | eda_03_epa_deep_dive.ipynb | 🔴 rebuild required | Old methodology — missing over/under evaluation and within-season trajectory |
-| 9 | eda_04_sp_ratings_recruiting.ipynb | 🔴 rebuild required | Old methodology — missing over/under evaluation and within-season trajectory |
-| 10 | eda_05_hierarchy_structure.ipynb | 🔴 rebuild required | Old methodology — missing over/under evaluation and within-season trajectory |
-| 11 | eda_06_environmental_features.ipynb | 🔴 rebuild required | Old methodology — missing over/under evaluation and within-season trajectory |
-| 12 | eda_07_momentum_rolling_features.ipynb | 🔴 rebuild required | Old methodology — missing over/under evaluation and within-season trajectory |
-| 13 | eda_08_elo_excitement.ipynb | ❌ not built | SP+/ELO divergence signal; excitement index as game-level over/under signal |
+| 8 | eda_03_epa_deep_dive.ipynb | ✅ complete | close_game EPA pair = joint model anchor. off YoY r=0.423, def YoY r=0.393 |
+| 9 | eda_04_sp_ratings_recruiting.ipynb | ✅ complete | SP+ anchor candidate YoY r=0.761. Recruiting conference-specific prior seed. |
+| 10 | eda_05_hierarchy_structure.ipynb | ✅ complete | Three-level hierarchy confirmed. Team ICC 0.13–0.17. Conference ICC marginal. |
+| 11 | eda_06_environmental_features.ipynb | ✅ complete | See environmental findings below |
+| 12 | eda_07_momentum_rolling_features.ipynb | ✅ complete | See momentum findings below |
+| 13 | eda_08_elo_excitement.ipynb | ✅ complete | See ELO/excitement findings below |
 | 14 | Claude Code session | ❌ not started | Play-by-play schema exploration — style, tempo, positional, spatial, line play candidates |
 | 15 | eda_09_style_tempo_delta.ipynb | ❌ not built | Style & tempo delta analysis — signal identification |
 | 16 | eda_10_style_archetypes.ipynb | ❌ not built | Style archetype clustering + matchup interaction effects |
@@ -164,28 +156,119 @@ Goes live: September 24, 2026. Date marker only — not a target game.
 | 25 | model_06_holdout_evaluation.ipynb | First look at 2025 holdout. Overall Brier score, calibration curve. Baseline before subgroup breakouts. |
 | 26 | model_07_evaluation_by_conference_tier.ipynb | Brier score and calibration by P4, G5, Independents. Model must perform credibly across all tiers. |
 | 27 | model_08_evaluation_by_game_type.ipynb | Rivalry games, cross-tier matchups, neutral site games. Quantify how model handles upsets. |
-| 28 | model_09_evaluation_season_progression.ipynb | Does calibration improve as season progresses? Conference game 1 is prior-driven. Conference game 8 has rolling data. Quantify improvement. |
+| 28 | model_09_evaluation_season_progression.ipynb | Does calibration improve as season progresses? Conf game 1 is prior-driven. Conf game 8 has rolling data. Quantify improvement. |
 | 29 | model_10_home_away_spread_accuracy.ipynb | Home field advantage calibration. Spread accuracy by expected margin. |
-| 30 | model_11_year_over_year_stability.ipynb | Do 2023 model ratings predict 2024 performance? Tests whether team quality estimates are predictive not just descriptive. |
-| 31 | model_12_refinement.ipynb | Adjust based on evaluation findings. May require revisiting priors, hierarchy, or dropping features. Likely a two-session day. |
-| 32 | model_13_stress_testing.ipynb | Edge cases: extreme weather, maximum travel, large timezone deltas, teams with very few data points. Find where model breaks. |
-| 33 | model_14_signoff.ipynb | Work through evaluation checklist from Day 18. Document every modeling decision, EDA finding that motivated it, and known limitations. Model not signed off until every checklist item addressed. |
+| 30 | model_11_year_over_year_stability.ipynb | Do 2023 model ratings predict 2024 performance? |
+| 31 | model_12_refinement.ipynb | Adjust based on evaluation findings. May require revisiting priors, hierarchy, or dropping features. |
+| 32 | model_13_stress_testing.ipynb | Edge cases: extreme weather, maximum travel, large timezone deltas, teams with very few data points. |
+| 33 | model_14_signoff.ipynb | Work through evaluation checklist from Day 18. Model not signed off until every checklist item addressed. |
 
 Gold layer begins Day 34.
 
 ---
 
 ## What The Next Session Must Build
-Rebuild eda_03_epa_deep_dive.ipynb — Day 8, using the correct three-test methodology.
+Days 14–17: Style, Tempo, Game Script analysis.
 
-Every EPA feature must be evaluated against:
-1. Game-level prediction of point differential — spread signal
-2. Game-level prediction of total points scored — over/under signal
-3. Score distribution variance — moneyline signal
-4. Within-season trajectory across conference games 1, 2–4, 5–8, 9–12
-5. YoY stability — r value and stable/unstable verdict
+Day 14 is a Claude Code session to explore the play-by-play schema and identify
+candidate style/tempo/spatial/line play features before any notebook is written.
+Days 15–17 follow in order after schema is confirmed.
 
-Every verdict must report spread, over/under, and moneyline findings separately.
+---
+
+## Key Findings By Day
+
+### Day 8 — EPA Deep Dive
+- close_game_epa_per_play: anchor candidate — spread r=0.584 at conf game 1, O/U r=0.434, holds across full trajectory, YoY r=0.423 (game-level predictor, not gated by YoY)
+- close_game_def_epa_per_play: anchor candidate — spread r=-0.587 at conf game 1, O/U r=0.471, holds across full trajectory, YoY r=0.393
+- def_epa_per_play_allowed: redundant — collinear with close_game_def_epa_per_play (r=0.9775)
+- last3_off_epa_avg: conference-specific supporting — signal in ACC, Mid-American, SEC only; null at conf game 1
+- last3_def_epa_avg: conference-specific supporting — signal in American Athletic, Big Ten, Conference USA, Mid-American, Pac-12, Sun Belt; null at conf game 1
+
+### Day 9 — SP+ and Recruiting
+- team_sp_rating: anchor candidate — spread partial r=0.1865 after EPA control, YoY r=0.7632, holds at conf game 1 (r=0.2107). O/U signal absent.
+- opp_sp_rating_at_game_time: redundant as model feature — use as control variable only. EPA anchor pair already captures opponent quality from focal team perspective.
+- recruiting_3yr_avg: conference-specific prior seed — YoY r=0.9746 (extremely stable). Game-level spread signal in American Athletic, Big Ten, Conference USA, Sun Belt. Redundant in ACC, Big 12, Mid-American, Mountain West, Pac-12, SEC. Must be modeled with conference-specific weight. Negative partial r after SP+ control in high-recruiting conferences — multicollinearity with SP+.
+
+### Day 10 — Hierarchy Structure
+- Three-level hierarchy confirmed: league → conference → team
+- Team ICC: points_scored=0.1282, total_points=0.0644, point_differential=0.1725 — strong, justifies team level
+- Conference ICC: points_scored=0.0207, total_points=0.0472, point_differential=0.0002 — marginal but pooling still provides regularization
+- VMR range: 5.041–7.016 (ratio=1.392) — below 1.5 threshold. Start with single dispersion parameter. Add conference-specific r only if posterior predictive checks show systematic miscalibration.
+- HFA: league-level +2.53 pts (p<0.001). Team HFA SD=4.27 pts — team-level deviations justified. Conference HFA range 2.91 pts — no conference-level HFA layer needed.
+- Team scoring YoY r=0.34–0.40 (raw). Prior must be anchored by SP+ and EPA, not raw scoring history.
+
+### Day 11 — Environmental Features
+- away_elevation_delta_ft: anchor candidate — spread r=0.105 at delta>=2000ft, YoY r=0.827. Signal concentrates in Mountain West and Big 12. Full population r near zero — threshold-activated feature, not linear predictor.
+- venue_elevation_ft: redundant — no threshold cleared. Use away_elevation_delta_ft.
+- away_travel_distance_mi: supporting — spread r=0.153 at >=1500mi, YoY r=0.717 (below anchor threshold). Spread signal only. No O/U signal.
+- away_tz_delta_hrs: supporting — spread r=-0.197 at abs>=2hr, strengthens at abs>=3hr (r=-0.258, n=71). YoY r=0.762. Spread signal only.
+- kickoff_hour × away_tz_delta_hrs: insufficient sample (n=15) — do not model.
+- wind_speed_mph, wind_gusts_mph, is_high_wind: redundant — no signal after EPA control at any threshold. Absorbed by EPA anchor pair.
+- wind_chill: supporting — O/U signal only at <=40°F (r=0.101, n=397). Strengthens at <=25°F (r=0.235, n=99). No spread signal.
+- temperature_f: supporting — O/U signal only at <=40°F (r=0.119, n=285). Largely absorbed by wind_chill composite.
+- humidity_pct: supporting — O/U signal within HI triggered population. Prefer heat_index.
+- heat_index: supporting — O/U signal in triggered pop (r=-0.121, n=300). Strengthens at >=90°F (r=-0.255, n=40). No spread signal.
+- precipitation_inches, is_precipitation: insufficient sample (n=66) — do not model.
+- is_dome: redundant — dome override zeroes weather correctly; no residual signal after env controls.
+- CRITICAL: elevation, travel, and timezone are threshold-activated features. Signal only emerges above specific thresholds. Model as indicator×magnitude interaction, not linear.
+
+### Day 12 — Momentum and Rolling Features
+- last3_off_epa_avg: conference-specific — signal in ACC, Mid-American, SEC. Redundant in American Athletic, Big 12, Big Ten, Conference USA, Mountain West, Pac-12, Sun Belt. Null at conf game 1.
+- last3_def_epa_avg: conference-specific supporting — signal holds from conf game 2, concentrates in American Athletic, Big Ten, Conference USA, Mid-American, Pac-12, Sun Belt.
+- last3_points_scored_avg: conference-specific supporting — signal holds from conf game 2, concentrates in ACC, American Athletic, Big 12, Big Ten, Conference USA, Mid-American.
+- last3_points_allowed_avg: supporting — signal holds from conf game 2, broad across conferences.
+- last3_win_pct: supporting — signal holds from conf game 2, broad across conferences.
+- days_since_last_game: conference-specific — bye week signal (>=12d) in Big 12, Mid-American, Mountain West only. Redundant elsewhere and in full population.
+- All rolling features: in-season only, no prior seed, null at conf game 1.
+
+### Day 13 — ELO and Excitement Index
+- pregame_elo: supporting — game-level predictor. Spread r=0.181 full population, holds at conf game 1 (r=0.132). YoY r=0.854 (strong but not gating — game-level predictor). O/U signal absent. Spread signal only.
+- elo_sp_divergence: supporting — spread r=0.176 after SP+ controlled, confirming ELO adds signal beyond SP+ for spread prediction. Compute in notebook first, add to dbt only after model confirms value.
+- prior_avg_excitement_index: redundant — YoY r=0.134 (extremely unstable), cannot function as prior seed. Late-season O/U signal (games 9-12, r=0.192) insufficient — n=169 and does not hold earlier. Conference trajectory inconsistent.
+
+---
+
+## Decisions Confirmed by EDA (add to locked decisions)
+- away_elevation_delta_ft: model as threshold-activated (>=2000ft), not linear
+- away_travel_distance_mi: model as threshold-activated (>=1500mi), not linear
+- away_tz_delta_hrs: model as threshold-activated (abs>=2hr), not linear
+- wind_chill: model in triggered population (temp<50, wind>3) only
+- heat_index: model in triggered population (temp>80, humidity>40) only
+- Conference-specific dispersion: start single parameter, revisit in posterior checks
+- ELO/SP+ divergence: compute in notebook first, not in dbt until model confirms
+- excitement_index: retrospective — prior-season team average is not a usable prior seed
+
+---
+
+## Locked Decisions — Do Not Revisit
+- Likelihood: Negative Binomial
+- Elevation computation: earthdistance extension
+- Timezone: COALESCE(IANA timezone, state CASE) hybrid
+- opp_sp_rating: prior year (season - 1) to prevent leakage
+- field_position_margin: dropped
+- havoc: always def_havoc_* columns, never off_havoc_*
+- Weather dome override: temp=68, wind=0, precip=0 when is_dome=true
+- D1 filter: FBS + FCS only via conference allowlist
+- Notre Dame: Power Four — route by team name not conference label
+- UConn: Group of Five — route by team name not conference label
+- FCS-to-FBS transitions: excluded — filtered at dbt level
+- recruiting_3yr_avg: high school recruiting only
+- Conference assignment: historically accurate by season from game records
+- Pac-12 in dataset: G5 for all seasons — Oregon/USC/UCLA moved to Big Ten;
+  Arizona/Arizona State/Colorado/Utah moved to Big 12; Cal/Stanford moved to ACC.
+  Teams labeled Pac-12 in data are the remnant G5-caliber conference.
+- FBS Independents: not a pooling group — Notre Dame routes to P4, UConn routes to G5 by team name
+- No tiers within conferences: team-level parameters handle within-conference spread
+- Three-level hierarchy: league → conference → team
+- Early-season null handling: Approach A — impute with season-to-date prior
+- Style/tempo analysis: delta approach first, clustering second (Days 15–16)
+- SP+/ELO divergence: compute in notebook first, add to dbt only if proven valid
+- Portal and NIL: deprioritized — revisit only if model underperforms in evaluation
+- def_epa_per_play_allowed (game-level): redundant — collinear with close_game_def_epa_per_play
+- def_epa_per_play (season-level): ANCHOR FEATURE — prior seed, never dropped
+- HFA: league-level baseline + team-level deviations. No conference-level HFA layer.
+- opp_sp_rating_at_game_time: control variable only, not a model feature
 
 ---
 
@@ -193,24 +276,25 @@ Every verdict must report spread, over/under, and moneyline findings separately.
 | File | Status | Notes |
 |---|---|---|
 | artifacts/candidate_features.csv | ✅ authoritative | 154 features, keep=True only |
-| artifacts/epa_feature_verdict.csv | 🔴 invalid | Produced under old methodology — rebuild Day 8 |
-| artifacts/sp_recruiting_verdict.csv | 🔴 invalid | Produced under old methodology — rebuild Day 9 |
-| artifacts/hierarchy_verdict.csv | 🔴 invalid | Produced under old methodology — rebuild Day 10 |
-| artifacts/environment_verdict.csv | 🔴 invalid | Produced under old methodology — rebuild Day 11 |
-| artifacts/momentum_verdict.csv | 🔴 invalid | Produced under old methodology — rebuild Day 12 |
+| artifacts/epa_feature_verdict.csv | ✅ valid | Day 8 — correct methodology |
+| artifacts/sp_recruiting_verdict.csv | ✅ valid | Day 9 — correct methodology |
+| artifacts/hierarchy_verdict.json | ✅ valid | Day 10 — correct methodology |
+| artifacts/environment_verdict.csv | ✅ valid | Day 11 — correct methodology |
+| artifacts/momentum_verdict.csv | ✅ valid | Day 12 — correct methodology |
+| artifacts/elo_excitement_verdict.csv | ✅ valid | Day 13 — correct methodology |
 
 ---
 
-## YoY Benchmarks (valid — methodology-independent)
+## YoY Benchmarks
 - off_epa_per_play YoY r = 0.423
 - def_epa_per_play YoY r = 0.393
 - sp_rating YoY r = 0.761, 95% CI [0.718, 0.803]
-- away_elevation_delta_ft YoY r = 0.863 — stable
-- away_travel_distance_mi YoY r = 0.723 — unstable
-
-These numbers are valid because YoY stability is methodology-independent. They will
-be used as benchmarks in the rebuilt notebooks but do not constitute complete verdicts
-on their own.
+- away_elevation_delta_ft YoY r = 0.827 — stable (anchor candidate)
+- away_travel_distance_mi YoY r = 0.717 — unstable (below anchor threshold)
+- away_tz_delta_hrs YoY r = 0.762 — unstable (below anchor threshold)
+- pregame_elo YoY r = 0.854 — strong (game-level predictor, not gating)
+- recruiting_3yr_avg YoY r = 0.975 — extremely stable (prior seed)
+- excitement_index YoY r = 0.134 — extremely unstable (not usable as prior)
 
 ---
 
@@ -218,8 +302,8 @@ on their own.
 - point_differential does not exist — derive as points_scored - points_allowed
 - total_points does not exist — derive as points_scored + points_allowed
 - Two distinct defensive EPA columns — do not confuse:
-  - def_epa_per_play_allowed in int_game_team_features — GAME-LEVEL
-  - def_epa_per_play in int_team_season_features — SEASON-LEVEL
+  - def_epa_per_play_allowed in int_game_team_features — GAME-LEVEL, redundant
+  - def_epa_per_play in int_team_season_features — SEASON-LEVEL, anchor feature
 - conference does NOT exist in int_game_team_features — join to
   int_team_season_context on team_name and season to get conference
 - int_game_environment has home_team and away_team, not team_name — join on game_id
@@ -233,6 +317,8 @@ on their own.
 - opp_sp_rating_at_game_time exists in int_game_team_features
 - pregame_elo, opponent_pregame_elo, postgame_elo, excitement_index exist in
   int_game_team_features
+- kickoff_hour exists in stg.stg_game_weather (smallint, ET timezone) — not yet
+  promoted to int layer
 
 ---
 
@@ -242,6 +328,7 @@ on their own.
 - int.int_game_environment — game-level venue and weather
 - int.int_team_season_context — season-level team context including conference
 - int.int_team_season_features — season-level team features, 534 rows, FBS only
+- stg.stg_game_weather — kickoff_hour available here, not yet in int layer
 
 ---
 
@@ -277,6 +364,8 @@ df[numeric_cols] = df[numeric_cols].astype(float)
 12. Never use nbformat, papermill, or any script to generate notebook files
 13. Every verdict must report spread signal, over/under signal, and moneyline signal
     separately — never collapse into a single verdict
+14. Conference stratification is mandatory for every partial r test — full population,
+    P4, G5, and each individual conference. Never issue a verdict from global analysis only.
 
 ---
 
@@ -297,68 +386,6 @@ def assign_tier(row):
 ```
 
 Pac-12 falls through to G5. FBS Independents handled by team name conditions.
-All other teams evaluated on actual season-accurate conference membership.
-
----
-
-## Locked Decisions — Do Not Revisit
-- Likelihood: Negative Binomial (Day 6 — scoring distribution math, not EDA verdicts)
-- Three-level hierarchy: league → conference → team (Day 10 — ICC is a data structure
-  question, methodology-independent)
-- Elevation computation: earthdistance extension
-- Timezone: COALESCE(IANA timezone, state CASE) hybrid
-- opp_sp_rating: prior year (season - 1) to prevent leakage
-- field_position_margin: dropped
-- havoc: always def_havoc_* columns, never off_havoc_*
-- Weather dome override: temp=68, wind=0, precip=0 when is_dome=true
-- D1 filter: FBS + FCS only via conference allowlist
-- Notre Dame: Power Four — route by team name not conference label
-- UConn: Group of Five — route by team name not conference label
-- FCS-to-FBS transitions: excluded — filtered at dbt level
-- recruiting_3yr_avg: high school recruiting only
-- Conference assignment: historically accurate by season from game records
-- Pac-12 in dataset: G5 for all seasons — Oregon/USC/UCLA moved to Big Ten;
-  Arizona/Arizona State/Colorado/Utah moved to Big 12; Cal/Stanford moved to ACC.
-  Teams labeled Pac-12 in data are the remnant G5-caliber conference.
-- FBS Independents: not a pooling group — Notre Dame routes to P4, UConn routes
-  to G5 by team name
-- No tiers within conferences: team-level parameters handle within-conference spread
-- Early-season null handling: Approach A — impute with season-to-date prior
-- Style/tempo analysis: delta approach first, clustering second (Days 15–16)
-- SP+/ELO divergence: compute in notebook first, add to dbt only if proven valid
-- Portal and NIL: deprioritized — revisit only if model underperforms in evaluation
-
-## Decisions Pending Rebuild Confirmation
-The following were made under the old methodology and cannot be treated as locked
-until the rebuilt notebooks confirm them:
-- No environmental feature as model adjuster
-- No last3_* rolling features in model
-- No bye week adjustment term
-- Weather features redundant after EPA control (spread and over/under)
-- High wind asymmetry finding
-- away_travel_distance_mi supporting-unstable only in max stress population
-- is_dome not a spread or over/under term
-- Recruiting requires conference-specific treatment
-- def_epa_per_play_allowed (game-level) redundant as model feature
-
----
-
-## Data Added (2026-05-01)
-- Added to raw.games: home_pregame_elo, away_pregame_elo, home_postgame_elo,
-  away_postgame_elo, excitement_index
-- Added to stg_games: all five columns
-- Added to int_game_team_features: pregame_elo, opponent_pregame_elo, postgame_elo,
-  excitement_index
-- ELO flipped correctly to team perspective
-- Coverage: pregame_elo 6,478/29,472 rows (100% within FBS conferences),
-  excitement_index 12,066/29,472 rows
-- ELO/SP+ correlation: r=0.8625
-
-## Data Fixes Applied (prior sessions)
-- Conference assignment by season from game records (not static snapshot)
-- 18 FCS transition team-seasons removed — row count 552 → 534
-- 161 FBS venues missing elevation data — fetched via Open-Meteo API, seed now
-  603 unique venues
 
 ---
 
@@ -366,8 +393,7 @@ until the rebuilt notebooks confirm them:
 At the end of every session:
 1. Update the date
 2. Move completed notebooks to ✅ in the EDA table
-3. Add any new locked decisions — move from pending to locked only when rebuilt
-   notebook confirms under correct methodology
+3. Add any new locked decisions
 4. Add key findings — spread, over/under, and moneyline reported separately
 5. Rewrite the confirmation gate to reflect what the next session must understand
 6. Update what the next session must build

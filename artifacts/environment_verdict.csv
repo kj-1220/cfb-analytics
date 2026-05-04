@@ -1,14 +1,16 @@
-feature,population,partial_r,yoy_r,role,reason
-venue_elevation_ft,Full away population,-0.024,,redundant,partial_r=-0.0240 in Full away population
-away_elevation_delta_ft,"Elev delta >= 3,000 ft",-0.0132,0.8633,redundant,"partial_r=-0.0132 in Elev delta >= 3,000 ft"
-away_home_elevation_ft,Full away population,-0.0073,,redundant,partial_r=-0.0073 in Full away population
-away_travel_distance_mi,Travel >= 500 mi,0.1017,0.7229,supporting — unstable,partial_r=+0.1017 in Travel >= 500 mi
-away_tz_delta_hrs,Full away population,-0.0964,,redundant,partial_r=-0.0964 in Full away population
-temperature_f,Non-dome games,0.025,,redundant,partial_r=+0.0250 in Non-dome games
-wind_speed_mph,Non-dome games,-0.0081,,redundant,partial_r=-0.0081 in Non-dome games
-humidity_pct,Non-dome games,0.0032,,redundant,partial_r=+0.0032 in Non-dome games
-wind_chill,Non-dome games,0.0243,,redundant,partial_r=+0.0243 in Non-dome games
-heat_index,Non-dome games,0.0266,,redundant,partial_r=+0.0266 in Non-dome games
-is_precipitation,Non-dome games,-0.0014,,insufficient sample,partial_r=-0.0014 in Non-dome games
-is_dome,All games,,,see dome analysis,residual SD comparison — see Section 5g
-is_high_wind,Non-dome games,-0.0032,,redundant,partial_r=-0.0032 in Non-dome games
+feature,population,spread_partial_r,spread_signal,ou_partial_r,ou_signal,yoy_r,yoy_stable,is_weather,verdict,notes
+away_elevation_delta_ft,"Away team, delta >= 2000 ft",0.1051,True,-0.0524,False,0.827,True,False,"anchor candidate — structural, signal + stable YoY",Signal concentrates at delta>=2000ft. Best threshold: >=3000ft r=0.136.
+venue_elevation_ft,"Away team, full population",-0.0303,False,-0.0078,False,0.683,False,False,redundant,No threshold cleared. away_elevation_delta_ft preferred.
+away_travel_distance_mi,"Away team, travel >= 1500 mi",0.1531,True,-0.1061,True,0.7174,False,False,"supporting — signal present, YoY below anchor threshold",Spread signal at >=1500mi. Also present in max-stress pop (>500mi + abs(tz)>=2).
+away_tz_delta_hrs,"Away team, abs(tz_delta) >= 2 hrs",-0.1966,True,-0.0509,False,0.7617,False,False,"supporting — signal present, YoY below anchor threshold","Spread signal only. Strengthens at abs>=3hr (r=-0.258, n=71). No O/U signal."
+kickoff_hour × away_tz_delta_hrs,"Large tz loss + early kickoff (tz>=2, kickoff<=12 ET)",,False,,False,,False,False,insufficient sample — do not model (n=15 in target population),Large tz loss (>=2hr) + early kickoff (<=12 ET) yields only 15 conference games. Theoretically sound but cannot be demonstrated empirically. Timezone signal at abs>=2hr (n=149) already captures bulk of the effect.
+wind_speed_mph,Non-dome games,0.0009,False,-0.0127,False,,False,True,redundant,No signal after EPA control at any threshold. Absorbed by EPA anchor pair.
+wind_gusts_mph,Non-dome games,0.001,False,-0.0031,False,,False,True,redundant,No signal after EPA control at any threshold. Absorbed by EPA anchor pair.
+is_high_wind,Non-dome games,-0.0019,False,0.0164,False,,False,True,redundant,No signal after EPA control at any threshold. Absorbed by EPA anchor pair.
+wind_chill,"WC triggered, wind_chill <= 40°F",0.0043,False,0.1005,True,,False,True,supporting — O/U signal only,"O/U signal at <=40°F (n=397). Strengthens at <=25°F (r=0.235, n=99). No spread signal."
+temperature_f,"Non-dome, temp <= 40°F",0.004,False,0.1194,True,,False,True,supporting — O/U signal only,O/U signal at <=40°F (n=285). Largely absorbed by wind_chill composite.
+humidity_pct,"HI triggered pop (temp>80, humidity>40)",0.0,False,-0.1213,True,,False,True,supporting — O/U signal only,O/U signal only within HI triggered population. Absorbed by heat_index composite — prefer heat_index.
+heat_index,"HI triggered pop (temp>80, humidity>40)",0.0,False,-0.121,True,,False,True,supporting — O/U signal only,"O/U signal in triggered pop (r=-0.121, n=300). Strengthens at >=90°F (r=-0.255, n=40). No spread signal."
+precipitation_inches,Non-dome games (n=66 precip games),0.0002,False,-0.0086,False,,False,True,insufficient sample — do not model (n=66 precipitation games),n=66 precipitation games in conference play. Below 200 threshold.
+is_precipitation,Non-dome games (n=66 precip games),-0.0,False,-0.0117,False,,False,True,insufficient sample — do not model (n=66 precipitation games),n=66 precipitation games in conference play. Below 200 threshold.
+is_dome,All conference games,,False,,False,,False,False,redundant — override zeroes weather; no residual signal after env controls,Dome residual SD not significantly different from non-dome (Levene p=0.549).
