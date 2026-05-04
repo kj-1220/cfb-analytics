@@ -1,7 +1,7 @@
 # CFB Analytics — Session State
 
 ## Last Updated
-2026-05-03
+2026-05-04
 
 ---
 
@@ -136,7 +136,7 @@ Goes live: September 24, 2026. Date marker only.
 | 11 | eda_06_environmental_features.ipynb | ✅ complete | See environmental findings below |
 | 12 | eda_07_momentum_rolling_features.ipynb | ✅ complete | See momentum findings below |
 | 13 | eda_08_elo_excitement.ipynb | ✅ complete | See ELO/excitement findings below |
-| 14 | Claude Code session | ❌ not started | Play-by-play schema exploration — style, tempo, positional, spatial, line play candidates |
+| 14 | Claude Code session | ✅ complete | Play-by-play schema verified. 31 new candidates added. Field zone derivable via yards_to_goal. Spatial/directional features permanently closed. raw.odds confirmed as 2026 live validation target only — no historical closing lines. |
 | 15 | eda_09_style_tempo_delta.ipynb | ❌ not built | Style & tempo delta analysis — signal identification |
 | 16 | eda_10_style_archetypes.ipynb | ❌ not built | Style archetype clustering + matchup interaction effects |
 | 17 | eda_11_game_script.ipynb | ❌ not built | Game script & close game signals |
@@ -168,11 +168,12 @@ Gold layer begins Day 34.
 ---
 
 ## What The Next Session Must Build
-Days 14–17: Style, Tempo, Game Script analysis.
+Days 15–17: Style, Tempo, Game Script analysis.
 
-Day 14 is a Claude Code session to explore the play-by-play schema and identify
-candidate style/tempo/spatial/line play features before any notebook is written.
-Days 15–17 follow in order after schema is confirmed.
+Day 14 schema exploration is complete. Day 15 builds eda_09_style_tempo_delta.ipynb.
+All 31 Day 14 candidates are in candidate_features.csv with authoritative_table=raw.plays.
+Every candidate must be computed per game from raw.plays and evaluated as a matchup delta
+(team A offense vs. team B defense) using the standard three-test methodology.
 
 ---
 
@@ -227,6 +228,19 @@ Days 15–17 follow in order after schema is confirmed.
 - elo_sp_divergence: supporting — spread r=0.176 after SP+ controlled, confirming ELO adds signal beyond SP+ for spread prediction. Compute in notebook first, add to dbt only after model confirms value.
 - prior_avg_excitement_index: redundant — YoY r=0.134 (extremely unstable), cannot function as prior seed. Late-season O/U signal (games 9-12, r=0.192) insufficient — n=169 and does not hold earlier. Conference trajectory inconsistent.
 
+### Day 14 — Play-by-Play Schema Exploration
+**Play-by-play grain:** raw.plays is the only play-level table. 1,073,640 plays, 6,204 games, 2022–2025. No drive-level standalone table — drive_id and drive_number in raw.plays enable drive aggregation. PPA coverage: 75.7% overall, 99.76% on scrimmage plays.
+**Style & tempo (verified computable per game from raw.plays):** success rate (overall, rush/pass splits, std_downs/pass_downs splits), stuff rate (rush yards_gained<=0), explosive rate (20+ and 10+ yard thresholds), line yards per rush (formula on yards_gained), sack rate (Sack play_type / pass attempts), points per opportunity (drive_id + scoring boolean), EPA splits (rush/pass, std_downs/pass_downs via ppa + play_type + down/distance), time of possession (game clock delta per drive, verified), field zone success and EPA (yards_to_goal buckets).
+**Spatial features:** No hash position, no play direction columns, no boundary/field side. Pass direction in play_text for 10.27% of pass plays — inconsistent formatting, not usable. Rush direction in play_text for 0.00%. Field zone IS computable via yards_to_goal (red zone ≤10 yards, scoring zone 11-25, own half 26-50, deep own 51+).
+**Not available (permanently closed):** Air yards, aDOT, YAC, time to throw, pressure rate, block win rates, hash position, play direction.
+**Player tagging:** None. No player ID, position, or roster tables anywhere in schema.
+**Havoc:** DB havoc not derivable game-by-game — passes defended not in raw.plays. Season-level def_havoc_* columns remain the only complete source. Proxy possible (sacks + interceptions + forced fumbles) but undercounts vs. CFBD definition.
+**Recruiting by position:** Not available — raw.recruiting has no position column. Aggregate composite only.
+**Opponent at play level:** offense/defense columns in raw.plays — opponent fully derivable for all 6,204 games.
+**raw.odds:** 20 rows, 11 games, August–September 2026 only (Bovada, DraftKings, FanDuel). No historical closing lines. This is the live validation target — model predictions compared against these lines.
+**raw.games:** conference_game boolean present for all games. home_win_prob available for 41% of rows (2022–2024 only, absent in 2025). attendance sparse.
+**31 new candidates added to candidate_features.csv** (all raw.plays-derived, game-level computable).
+
 ---
 
 ## Decisions Confirmed by EDA (add to locked decisions)
@@ -269,13 +283,21 @@ Days 15–17 follow in order after schema is confirmed.
 - def_epa_per_play (season-level): ANCHOR FEATURE — prior seed, never dropped
 - HFA: league-level baseline + team-level deviations. No conference-level HFA layer.
 - opp_sp_rating_at_game_time: control variable only, not a model feature
+- Hash position: does not exist in schema — permanently closed, never revisit
+- Play direction (pass left/right/middle, rush direction): no structured column — play_text coverage 10% pass / 0% rush — permanently closed
+- Air yards, aDOT, YAC, time to throw, pressure rate, block win rates: do not exist anywhere in schema — permanently closed
+- Recruiting by position group: raw.recruiting has no position column — permanently closed
+- PFF grades: no PFF table in any schema — permanently closed
+- DB havoc game-level derivation: passes defended not in raw.plays — use season-level def_havoc_db only
+- raw.odds: 2026 target season only — no historical closing lines exist
+- Havoc columns: off_havoc_* excluded from all int layers — only def_havoc_* used
 
 ---
 
 ## Artifacts Status
 | File | Status | Notes |
 |---|---|---|
-| artifacts/candidate_features.csv | ✅ authoritative | 154 features, keep=True only |
+| artifacts/candidate_features.csv | ✅ authoritative | 185 features keep=True (154 prior + 31 raw.plays Day 14) |
 | artifacts/epa_feature_verdict.csv | ✅ valid | Day 8 — correct methodology |
 | artifacts/sp_recruiting_verdict.csv | ✅ valid | Day 9 — correct methodology |
 | artifacts/hierarchy_verdict.json | ✅ valid | Day 10 — correct methodology |
@@ -319,6 +341,18 @@ Days 15–17 follow in order after schema is confirmed.
   int_game_team_features
 - kickoff_hour exists in stg.stg_game_weather (smallint, ET timezone) — not yet
   promoted to int layer
+- raw.plays scrimmage play types for rush: 'Rush', 'Rushing Touchdown'
+- raw.plays scrimmage play types for pass: 'Pass Reception', 'Pass Incompletion',
+  'Passing Touchdown', 'Sack', 'Pass Completion', 'Pass Interception Return'
+- raw.plays ppa coverage: 75.7% overall, 99.76% on scrimmage plays — use scrimmage
+  filter before computing any EPA metric
+- raw.plays yards_to_goal: 0–100 scale. Red zone = yards_to_goal <= 10.
+- raw.plays std_downs: down=1, OR (down=2 AND distance<=8), OR (down IN (3,4) AND distance<=5)
+- raw.plays pass_downs: (down=2 AND distance>8) OR (down IN (3,4) AND distance>5)
+- raw.plays opponent: defense column = opponent of the offense on that play
+- raw.odds: 2026 season only (Bovada, DraftKings, FanDuel) — not historical
+- raw.games: conference_game boolean available for all rows; home_win_prob available
+  2022–2024 only (absent 2025); attendance sparse (3,220 / 14,744 rows)
 
 ---
 
