@@ -1,0 +1,92 @@
+{
+  "notebook": "eda_09_style_tempo_delta.ipynb",
+  "status": "rebuilt_clean",
+  "seasons": [
+    2022,
+    2023,
+    2024
+  ],
+  "holdout_season_excluded": 2025,
+  "base_valid_games": 1607,
+  "analysis_games": 1604,
+  "dropped_games_missing_required_controls": 3,
+  "style_dimensions_tested": 24,
+  "style_delta_features_tested": 24,
+  "partial_r_threshold": 0.08,
+  "primary_controls": [
+    "close_game_epa_delta",
+    "sp_rating_delta"
+  ],
+  "outcomes_tested": [
+    "spread",
+    "over_under",
+    "moneyline_abs_margin_variance",
+    "moneyline_squared_margin_variance"
+  ],
+  "methodology": {
+    "grain": "one row per game after home-minus-away style delta construction",
+    "raw_metric_grain": "one row per team per game from raw.plays",
+    "style_metric_type": "in-game observed style metrics",
+    "deployment_warning": "In-game metrics qualify whether dimensions matter. Pregame rolling/current-season versions must be tested before model deployment.",
+    "conference_stratification": "Full, P4, G5, and individual conferences",
+    "trajectory_buckets": [
+      "conf_game_1",
+      "conf_games_2_4",
+      "conf_games_5_8",
+      "conf_games_9_12"
+    ],
+    "yoy_stability_role": "prior seed eligibility only; does not gate game-level signal"
+  },
+  "final_verdict_counts": {
+    "candidate_game_level_signal_only": 22,
+    "candidate_game_level_signal_and_weak_prior_seed": 2
+  },
+  "recommended_deployment_role_counts": {
+    "test_pregame_rolling_current_season_version": 22,
+    "test_prior_and_pregame_rolling_version": 2
+  },
+  "spread_verdict_counts": {
+    "conference_specific_signal": 11,
+    "full_population_signal": 8,
+    "tier_specific_signal": 5
+  },
+  "over_under_verdict_counts": {
+    "conference_specific_signal": 23,
+    "tier_specific_signal": 1
+  },
+  "moneyline_variance_verdict_counts": {
+    "conference_specific_variance_signal": 22,
+    "full_population_variance_signal": 2
+  },
+  "prior_seed_verdict_counts": {
+    "not_prior_seed": 22,
+    "weak_prior_seed_candidate": 2
+  },
+  "stable_prior_seed_features": [
+    "rush_rate_pass_downs",
+    "rush_rate_std_downs"
+  ],
+  "full_population_spread_signals": [
+    "def_epa_pass_allowed",
+    "def_pts_per_opportunity_allowed",
+    "def_success_rate_pass_allowed",
+    "off_epa_pass",
+    "off_pts_per_opportunity",
+    "off_success_rate_pass",
+    "rush_rate_pass_downs",
+    "rush_rate_std_downs"
+  ],
+  "full_population_over_under_signals": [],
+  "full_population_moneyline_abs_variance_signals": [
+    "def_sack_rate",
+    "off_sack_rate_allowed"
+  ],
+  "full_population_moneyline_squared_variance_signals": [],
+  "artifacts_written": {
+    "verdict": "artifacts/style_tempo_verdict.csv",
+    "summary": "artifacts/style_tempo_summary.json",
+    "all_signal": "artifacts/style_tempo_all_signal.csv",
+    "trajectory_signal": "artifacts/style_tempo_trajectory_signal.csv",
+    "yoy_stability": "artifacts/style_tempo_yoy_stability.csv"
+  }
+}
