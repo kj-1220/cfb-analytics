@@ -86,17 +86,20 @@ Rewritten each session to reflect what the next notebook must understand.
 
 Answer these questions in your own words before writing any code:
 
-1. Day 15 showed every linear delta is redundant after EPA and SP+ control. Explain
-   in your own words why that result is the motivation for clustering rather than the
-   conclusion that style and tempo don't matter.
+**Question 1:** Day 15 found that every linear style and tempo delta is redundant
+after EPA and SP+ control. What does that result actually tell you about how style
+information should be represented, and what specific failure of linear representation
+motivates the clustering approach?
 
-2. The clustering feature space excludes redzone metrics, time of possession, and sack
-   rate. Explain why YoY instability is the disqualifying criterion for clustering
-   dimensions, and what happens to archetype validity if you include unstable metrics.
+**Question 2:** You are about to run partial r tests on archetype matchup
+combinations. Walk me through exactly what a positive result looks like — what
+partial r threshold, against what outcome, controlling for what, stratified how —
+and what it would mean for the model if you find it. Then do the same for a
+negative result.
 
-3. The notebook assigns offensive archetypes and defensive archetypes separately.
-   Explain what the matchup interaction variable is, how it is constructed, and what
-   it tests that the Day 15 linear delta could not.
+**Question 3:** This notebook assigns archetypes at the season level and tests them
+at the game level. What are the specific ways that design can produce a false
+positive result, and what constraints in the analysis prevent each one?
 
 ---
 
@@ -126,16 +129,16 @@ Goes live: September 24, 2026. Date marker only.
 ## EDA Phase — Days 6–19
 | Day | Notebook | Status | Decision Produced |
 |---|---|---|---|
-| 6 | eda_01_scoring_distributions.ipynb | ✅ complete | Negative Binomial likelihood — overdispersion confirmed, VMR 3.56–8.05 |
+| 6 | eda_01_scoring_distributions.ipynb | ✅ complete | Negative Binomial likelihood — overdispersion confirmed, VMR 4.95–7.16 (2022–2024) |
 | 7 | eda_02_feature_inventory.ipynb | ✅ complete | 154 candidate features locked in candidate_features.csv |
-| 8 | eda_03_epa_deep_dive.ipynb | ✅ complete | close_game EPA pair = joint model anchor. off YoY r=0.423, def YoY r=0.393 |
-| 9 | eda_04_sp_ratings_recruiting.ipynb | ✅ complete | SP+ anchor candidate YoY r=0.761. Recruiting conference-specific prior seed. |
-| 10 | eda_05_hierarchy_structure.ipynb | ✅ complete | Three-level hierarchy confirmed. Team ICC 0.13–0.17. Conference ICC marginal. |
+| 8 | eda_03_epa_deep_dive.ipynb | ✅ complete | close_game EPA pair = joint model anchor. off YoY r=0.4331, def YoY r=0.4224 |
+| 9 | eda_04_sp_ratings_recruiting.ipynb | ✅ complete | SP+ anchor candidate YoY r=0.7741. Recruiting conference-specific prior seed. |
+| 10 | eda_05_hierarchy_structure.ipynb | ✅ complete | Three-level hierarchy confirmed. Team ICC 0.14–0.19. Conference ICC marginal. |
 | 11 | eda_06_environmental_features.ipynb | ✅ complete | See environmental findings below |
 | 12 | eda_07_momentum_rolling_features.ipynb | ✅ complete | See momentum findings below |
 | 13 | eda_08_elo_excitement.ipynb | ✅ complete | See ELO/excitement findings below |
 | 14 | Claude Code session | ✅ complete | Play-by-play schema verified. 31 new candidates added. Field zone derivable via yards_to_goal. Spatial/directional features permanently closed. raw.odds confirmed as 2026 live validation target only — no historical closing lines. |
-| 15 | eda_09_style_tempo_delta.ipynb | ✅ complete | All 17 style/tempo deltas redundant after EPA+SP+ control. No linear matchup signal. YoY stability poor (max r=0.567). Clustering warranted. |
+| 15 | eda_09_style_tempo_delta.ipynb | ✅ complete | All 17 style/tempo deltas redundant after EPA+SP+ control. No linear matchup signal. YoY stability poor (max r=0.577). Clustering warranted. |
 | 16 | eda_10_style_archetypes.ipynb | ❌ not built | Style archetype clustering + matchup interaction effects |
 | 17 | eda_11_game_script.ipynb | ❌ not built | Game script & close game signals |
 | 18 | eda_12_evaluation_framework.ipynb | ❌ not built | Written evaluation checklist for model sign-off |
@@ -169,67 +172,70 @@ Gold layer begins Day 34.
 Day 16: eda_10_style_archetypes.ipynb — Style archetype clustering and matchup
 interaction effects.
 
-Handoff document produced at end of Day 15 session. Key constraints:
-- Cluster on 15 stable dimensions only (YoY r >= 0.40 from Day 15 results)
-- Use season-level averages from int_team_season_features — not rolling windows
+Key constraints:
+- Cluster on 15 stable dimensions only (YoY r >= 0.40 from Day 15 clean results)
+- def_stuff_rate_allowed at r=0.4311 — confirmed above threshold on clean data
+- Use season-level averages computed from raw.plays — not rolling windows, not int_team_season_features
 - Cluster offense and defense separately
+- Fit clusters on 2022–2024 only. Apply fitted scaler and cluster centers to 2025 out-of-sample.
 - Test matchup interaction effects (off_archetype x def_archetype) against spread
   and O/U after EPA + SP+ control using same partial r framework as Day 15
 - FBS conference games only — same join pattern as Day 15
 - All three outcome signals required: spread, O/U, variance
+- Population for testing: 2022–2024 conference games only (1,607 matchup rows)
 
 ---
 
 ## Key Findings By Day
 
 ### Day 8 — EPA Deep Dive
-- close_game_epa_per_play: anchor candidate — spread r=0.584 at conf game 1, O/U r=0.434, holds across full trajectory, YoY r=0.423 (game-level predictor, not gated by YoY)
-- close_game_def_epa_per_play: anchor candidate — spread r=-0.587 at conf game 1, O/U r=0.471, holds across full trajectory, YoY r=0.393
+- close_game_epa_per_play: anchor candidate — spread r=0.5988 at conf game 1, O/U r=0.4237, holds across full trajectory, YoY r=0.4331 (game-level predictor, not gated by YoY)
+- close_game_def_epa_per_play: anchor candidate — spread r=-0.6134 at conf game 1, O/U r=0.4473, holds across full trajectory, YoY r=0.4224
 - def_epa_per_play_allowed: redundant — collinear with close_game_def_epa_per_play (r=0.9775)
 - last3_off_epa_avg: conference-specific supporting — signal in ACC, Mid-American, SEC only; null at conf game 1
 - last3_def_epa_avg: conference-specific supporting — signal in American Athletic, Big Ten, Conference USA, Mid-American, Pac-12, Sun Belt; null at conf game 1
 
 ### Day 9 — SP+ and Recruiting
-- team_sp_rating: anchor candidate — spread partial r=0.1865 after EPA control, YoY r=0.7632, holds at conf game 1 (r=0.2107). O/U signal absent.
+- team_sp_rating: anchor candidate — spread partial r=0.1822 after EPA control, YoY r=0.7741, holds at conf game 1 (r=0.2308). O/U signal absent.
 - opp_sp_rating_at_game_time: redundant as model feature — use as control variable only. EPA anchor pair already captures opponent quality from focal team perspective.
-- recruiting_3yr_avg: conference-specific prior seed — YoY r=0.9746 (extremely stable). Game-level spread signal in American Athletic, Big Ten, Conference USA, Sun Belt. Redundant in ACC, Big 12, Mid-American, Mountain West, Pac-12, SEC. Must be modeled with conference-specific weight. Negative partial r after SP+ control in high-recruiting conferences — multicollinearity with SP+.
+- recruiting_3yr_avg: conference-specific prior seed — YoY r=0.9758 (extremely stable). Game-level spread signal in American Athletic, Sun Belt only. Redundant in ACC, Big 12, Big Ten, Conference USA, Mid-American, Mountain West, Pac-12, SEC. Must be modeled with conference-specific weight. Negative partial r after SP+ control in high-recruiting conferences — multicollinearity with SP+.
 
 ### Day 10 — Hierarchy Structure
 - Three-level hierarchy confirmed: league → conference → team
-- Team ICC: points_scored=0.1282, total_points=0.0644, point_differential=0.1725 — strong, justifies team level
-- Conference ICC: points_scored=0.0207, total_points=0.0472, point_differential=0.0002 — marginal but pooling still provides regularization
-- VMR range: 5.041–7.016 (ratio=1.392) — below 1.5 threshold. Start with single dispersion parameter. Add conference-specific r only if posterior predictive checks show systematic miscalibration.
-- HFA: league-level +2.53 pts (p<0.001). Team HFA SD=4.27 pts — team-level deviations justified. Conference HFA range 2.91 pts — no conference-level HFA layer needed.
-- Team scoring YoY r=0.34–0.40 (raw). Prior must be anchored by SP+ and EPA, not raw scoring history.
+- Team ICC: points_scored=0.1394, total_points=0.0764, point_differential=0.1925 — strong, justifies team level
+- Conference ICC: points_scored=0.0226, total_points=0.0505, point_differential=0.0002 — marginal but pooling still provides regularization
+- VMR range: 4.948–7.158 (ratio=1.447) — below 1.5 threshold. Start with single dispersion parameter. Add conference-specific r only if posterior predictive checks show systematic miscalibration.
+- HFA: league-level +2.48 pts (p<0.001). Team HFA SD=4.85 pts — team-level deviations justified. Conference HFA range 4.19 pts — no conference-level HFA layer needed.
+- Team scoring YoY r=0.35–0.49 (raw). Prior must be anchored by SP+ and EPA, not raw scoring history.
 
 ### Day 11 — Environmental Features
-- away_elevation_delta_ft: anchor candidate — spread r=0.105 at delta>=2000ft, YoY r=0.827. Signal concentrates in Mountain West and Big 12. Full population r near zero — threshold-activated feature, not linear predictor.
+- away_elevation_delta_ft: anchor candidate — spread r=0.1518 at delta>=2000ft, YoY r=0.8255. Signal concentrates in Mountain West and Big 12. Full population r near zero — threshold-activated feature, not linear predictor.
 - venue_elevation_ft: redundant — no threshold cleared. Use away_elevation_delta_ft.
-- away_travel_distance_mi: supporting — spread r=0.153 at >=1500mi, YoY r=0.717 (below anchor threshold). Spread signal only. No O/U signal.
-- away_tz_delta_hrs: supporting — spread r=-0.197 at abs>=2hr, strengthens at abs>=3hr (r=-0.258, n=71). YoY r=0.762. Spread signal only.
-- kickoff_hour × away_tz_delta_hrs: insufficient sample (n=15) — do not model.
+- away_travel_distance_mi: supporting — spread r=0.2011 at >=1500mi, YoY r=0.6562 (below anchor threshold). Spread signal only. No O/U signal.
+- away_tz_delta_hrs: supporting — spread r=-0.2669 at abs>=2hr, strengthens at abs>=3hr (r=-0.3103, n=38). YoY r=0.6710. Spread signal only.
+- kickoff_hour × away_tz_delta_hrs: insufficient sample (n=8) — do not model.
 - wind_speed_mph, wind_gusts_mph, is_high_wind: redundant — no signal after EPA control at any threshold. Absorbed by EPA anchor pair.
-- wind_chill: supporting — O/U signal only at <=40°F (r=0.101, n=397). Strengthens at <=25°F (r=0.235, n=99). No spread signal.
-- temperature_f: supporting — O/U signal only at <=40°F (r=0.119, n=285). Largely absorbed by wind_chill composite.
-- humidity_pct: supporting — O/U signal within HI triggered population. Prefer heat_index.
-- heat_index: supporting — O/U signal in triggered pop (r=-0.121, n=300). Strengthens at >=90°F (r=-0.255, n=40). No spread signal.
-- precipitation_inches, is_precipitation: insufficient sample (n=66) — do not model.
+- wind_chill: supporting — O/U signal only at <=40°F (r=0.1122, n=315). Strengthens at <=25°F (r=0.3373, n=71). No spread signal.
+- temperature_f: supporting — O/U signal only at <=40°F (r=0.1339, n=227). Largely absorbed by wind_chill composite.
+- humidity_pct: redundant — no signal in triggered population on clean data.
+- heat_index: redundant — O/U signal absent in triggered population on clean data. Do not model.
+- precipitation_inches, is_precipitation: insufficient sample (n=44) — do not model.
 - is_dome: redundant — dome override zeroes weather correctly; no residual signal after env controls.
 - CRITICAL: elevation, travel, and timezone are threshold-activated features. Signal only emerges above specific thresholds. Model as indicator×magnitude interaction, not linear.
 
 ### Day 12 — Momentum and Rolling Features
-- last3_off_epa_avg: conference-specific — signal in ACC, Mid-American, SEC. Redundant in American Athletic, Big 12, Big Ten, Conference USA, Mountain West, Pac-12, Sun Belt. Null at conf game 1.
+- last3_off_epa_avg: conference-specific — signal in ACC, Conference USA, Mid-American, Mountain West, SEC. Redundant in American Athletic, Big 12, Big Ten, Pac-12, Sun Belt. Null at conf game 1.
 - last3_def_epa_avg: conference-specific supporting — signal holds from conf game 2, concentrates in American Athletic, Big Ten, Conference USA, Mid-American, Pac-12, Sun Belt.
-- last3_points_scored_avg: conference-specific supporting — signal holds from conf game 2, concentrates in ACC, American Athletic, Big 12, Big Ten, Conference USA, Mid-American.
-- last3_points_allowed_avg: supporting — signal holds from conf game 2, broad across conferences.
+- last3_points_scored_avg: conference-specific supporting — signal holds from conf game 2, concentrates in ACC, Big 12, Big Ten, Conference USA, Mid-American, Mountain West.
+- last3_points_allowed_avg: conference-specific supporting — signal holds from conf game 2, concentrates in American Athletic, Big Ten, Conference USA, Mountain West, Pac-12, Sun Belt.
 - last3_win_pct: supporting — signal holds from conf game 2, broad across conferences.
-- days_since_last_game: conference-specific — bye week signal (>=12d) in Big 12, Mid-American, Mountain West only. Redundant elsewhere and in full population.
+- days_since_last_game: conference-specific — bye week signal (>=12d) in American Athletic and Big 12 only. Redundant elsewhere and in full population.
 - All rolling features: in-season only, no prior seed, null at conf game 1.
 
 ### Day 13 — ELO and Excitement Index
-- pregame_elo: supporting — game-level predictor. Spread r=0.181 full population, holds at conf game 1 (r=0.132). YoY r=0.854 (strong but not gating — game-level predictor). O/U signal absent. Spread signal only.
-- elo_sp_divergence: supporting — spread r=0.176 after SP+ controlled, confirming ELO adds signal beyond SP+ for spread prediction. Compute in notebook first, add to dbt only after model confirms value.
-- prior_avg_excitement_index: redundant — YoY r=0.134 (extremely unstable), cannot function as prior seed. Late-season O/U signal (games 9-12, r=0.192) insufficient — n=169 and does not hold earlier. Conference trajectory inconsistent.
+- pregame_elo: supporting — game-level predictor. Spread r=0.1702 full population, holds at conf game 1 (r=0.1870). YoY r=0.8452 (strong but not gating — game-level predictor). O/U signal absent. Spread signal only.
+- elo_sp_divergence: supporting — spread r=0.1650 after SP+ controlled, confirming ELO adds signal beyond SP+ for spread prediction. Compute in notebook first, add to dbt only after model confirms value.
+- prior_avg_excitement_index: redundant — YoY r=0.1877 (extremely unstable), cannot function as prior seed. Late-season O/U signal (games 9-12, r=0.3115) does not hold earlier. Conference trajectory inconsistent.
 
 ### Day 14 — Play-by-Play Schema Exploration
 - raw.plays grain: only play-level table. 1,073,640 plays, 6,204 games, 2022–2025. No standalone drive table — drive_id and drive_number enable drive aggregation. PPA: 75.7% overall, 99.76% on scrimmage plays.
@@ -240,14 +246,22 @@ Handoff document produced at end of Day 15 session. Key constraints:
 - 31 new candidates added to candidate_features.csv — all raw.plays-derived, game-level computable.
 
 ### Day 15 — Style and Tempo Delta Analysis
-- Population: 2,155 FBS conference game matchups, 2022–2025. P4=1,039, G5=1,116.
+- Population: 1,607 FBS conference game matchups, 2022–2024. P4=754, G5=853.
 - Result: ALL 17 style/tempo deltas redundant after EPA anchor pair + SP+ control. No feature cleared 0.08 threshold on spread or O/U. No variance signal on any feature.
-- Highest spread partial r: delta_off_epa_pass=0.051. Highest O/U: delta_off_pts_per_opportunity=0.053. Both below threshold.
-- Trajectory: 9 of 17 weaken across season arc. 7 stable. 1 strengthens.
-- YoY stability: no metric reached stable threshold (r>=0.70). Best: off_success_rate_std_downs r=0.567. Redzone metrics, time_of_possession, sack_rate all below r=0.10 — excluded from Day 16 clustering space.
-- Conference sign flips observed: delta_rush_rate_pass_downs SEC r=-0.091 vs American Athletic r=+0.095. delta_off_success_rate_pass SEC r=+0.161 vs Conference USA r=-0.076. Suggests conference-specific style effects linear coefficients cannot model.
+- Highest spread partial r: delta_off_success_rate_pass=0.0445. Highest O/U: delta_off_success_rate_std_downs=0.0517. Both below threshold.
+- Trajectory: 10 of 17 weaken across season arc. 5 stable. 2 strengthen.
+- YoY stability: no metric reached stable threshold (r>=0.70). Best: rush_rate_std_downs r=0.5766. Redzone metrics, time_of_possession, sack_rate all below r=0.10 — excluded from Day 16 clustering space.
+- Conference sign flips observed: delta_rush_rate_pass_downs SEC r=-0.067 vs American Athletic r=+0.031. delta_off_success_rate_pass SEC r=+0.168 vs Conference USA r=-0.118. Suggests conference-specific style effects linear coefficients cannot model.
 - Conclusion: linear deltas wrong representation. Clustering warranted. Style and tempo not dead — representation needs to change.
-- Stable dimensions for Day 16 clustering (YoY r>=0.40): off_success_rate_std_downs (0.567), rush_rate_std_downs (0.535), def_pts_per_opportunity_allowed (0.526), off_success_rate_rush (0.524), off_pts_per_opportunity (0.516), off_success_rate_pass (0.492), off_stuff_rate (0.483), rush_rate_pass_downs (0.479), off_line_yards_per_rush (0.472), off_explosive_rate_10 (0.443), off_epa_rush (0.436), def_success_rate_rush (0.428), def_success_rate_std_downs (0.420), def_epa_rush_allowed (0.400), def_stuff_rate_allowed (0.396).
+- Stable dimensions for Day 16 clustering (YoY r>=0.40, from clean 2022–2024 run):
+  rush_rate_std_downs (0.5766), off_success_rate_std_downs (0.5547),
+  def_pts_per_opportunity_allowed (0.5429), rush_rate_pass_downs (0.5177),
+  off_success_rate_rush (0.5111), off_pts_per_opportunity (0.5108),
+  off_line_yards_per_rush (0.4916), off_stuff_rate (0.4910),
+  off_success_rate_pass (0.4872), off_explosive_rate_10 (0.4674),
+  off_epa_rush (0.4419), def_stuff_rate_allowed (0.4311),
+  def_success_rate_rush (0.4278), def_success_rate_std_downs (0.4182),
+  def_epa_rush_allowed (0.4088).
 
 ---
 
@@ -256,13 +270,16 @@ Handoff document produced at end of Day 15 session. Key constraints:
 - away_travel_distance_mi: model as threshold-activated (>=1500mi), not linear
 - away_tz_delta_hrs: model as threshold-activated (abs>=2hr), not linear
 - wind_chill: model in triggered population (temp<50, wind>3) only
-- heat_index: model in triggered population (temp>80, humidity>40) only
+- heat_index: redundant — no O/U signal on clean 2022–2024 data. Do not model.
+- humidity_pct: redundant — no signal in triggered population. Do not model.
 - Conference-specific dispersion: start single parameter, revisit in posterior checks
 - ELO/SP+ divergence: compute in notebook first, not in dbt until model confirms
 - excitement_index: retrospective — prior-season team average is not a usable prior seed
 - Style/tempo linear deltas: ALL redundant after EPA+SP+ control — do not model as linear features
-- Style/tempo clustering: cluster on 15 stable dimensions (YoY r>=0.40) using season averages only
+- Style/tempo clustering: cluster on 15 stable dimensions (YoY r>=0.40) using raw.plays season averages only
 - Redzone metrics, time of possession, sack rate: excluded from clustering space (YoY r<0.30)
+- recruiting_3yr_avg: game-level spread signal in American Athletic and Sun Belt only (Big Ten and Conference USA signal does not survive on clean data)
+- days_since_last_game: bye week signal in American Athletic and Big 12 only (Mid-American and Mountain West signal does not survive on clean data)
 
 ---
 
@@ -301,8 +318,9 @@ Handoff document produced at end of Day 15 session. Key constraints:
 - raw.odds: 2026 target season only — no historical closing lines exist
 - Havoc columns: off_havoc_* excluded from all int layers — only def_havoc_* used
 - Style/tempo linear deltas: ALL 17 redundant — do not model as linear features
-- Rolling windows for clustering: do not use — use season averages only
+- Rolling windows for clustering: do not use — use raw.plays season averages only
 - Clustering dimensions: exclude redzone metrics, time of possession, sack rate (YoY r<0.30)
+- EDA training population: 2022–2024 only. 2025 is holdout — excluded from all EDA signal tests, YoY stability calculations, and cluster fitting. 2025 archetypes assigned out-of-sample using fitted cluster centers.
 
 ---
 
@@ -310,32 +328,46 @@ Handoff document produced at end of Day 15 session. Key constraints:
 | File | Status | Notes |
 |---|---|---|
 | artifacts/candidate_features.csv | ✅ authoritative | 185 features keep=True (154 prior + 31 raw.plays Day 14) |
-| artifacts/epa_feature_verdict.csv | ✅ valid | Day 8 — correct methodology |
-| artifacts/sp_recruiting_verdict.csv | ✅ valid | Day 9 — correct methodology |
-| artifacts/hierarchy_verdict.json | ✅ valid | Day 10 — correct methodology |
-| artifacts/environment_verdict.csv | ✅ valid | Day 11 — correct methodology |
-| artifacts/momentum_verdict.csv | ✅ valid | Day 12 — correct methodology |
-| artifacts/elo_excitement_verdict.csv | ✅ valid | Day 13 — correct methodology |
-| artifacts/style_tempo_verdict.csv | ✅ valid | Day 15 — all 17 deltas redundant after EPA+SP+ control |
+| artifacts/epa_feature_verdict.csv | ✅ valid | Day 8 — rerun on 2022–2024 clean data |
+| artifacts/sp_recruiting_verdict.csv | ✅ valid | Day 9 — rerun on 2022–2024 clean data |
+| artifacts/hierarchy_verdict.json | ✅ valid | Day 10 — rerun on 2022–2024 clean data |
+| artifacts/environment_verdict.csv | ✅ valid | Day 11 — rerun on 2022–2024 clean data |
+| artifacts/momentum_verdict.csv | ✅ valid | Day 12 — rerun on 2022–2024 clean data |
+| artifacts/elo_excitement_verdict.csv | ✅ valid | Day 13 — rerun on 2022–2024 clean data |
+| artifacts/style_tempo_verdict.csv | ✅ valid | Day 15 — rerun on 2022–2024 clean data |
 
 ---
 
 ## YoY Benchmarks
-- off_epa_per_play YoY r = 0.423
-- def_epa_per_play YoY r = 0.393
-- sp_rating YoY r = 0.761, 95% CI [0.718, 0.803]
-- away_elevation_delta_ft YoY r = 0.827 — stable (anchor candidate)
-- away_travel_distance_mi YoY r = 0.717 — unstable (below anchor threshold)
-- away_tz_delta_hrs YoY r = 0.762 — unstable (below anchor threshold)
-- pregame_elo YoY r = 0.854 — strong (game-level predictor, not gating)
-- recruiting_3yr_avg YoY r = 0.975 — extremely stable (prior seed)
-- excitement_index YoY r = 0.134 — extremely unstable (not usable as prior)
-- off_success_rate_std_downs YoY r = 0.567 — best style/tempo metric (moderate)
-- rush_rate_std_downs YoY r = 0.535 — moderate
-- off_success_rate_rush YoY r = 0.524 — moderate
-- time_of_possession YoY r = 0.076 — extremely unstable
-- off_success_rate_redzone YoY r = 0.071 — extremely unstable
-- def_sack_rate YoY r = 0.223 — unstable
+All values from clean 2022–2024 training data only.
+
+- off_epa_per_play YoY r = 0.4331
+- def_epa_per_play YoY r = 0.4224
+- sp_rating YoY r = 0.7741
+- away_elevation_delta_ft YoY r = 0.8255 — stable (anchor candidate)
+- away_travel_distance_mi YoY r = 0.6562 — unstable (below anchor threshold)
+- away_tz_delta_hrs YoY r = 0.6710 — unstable (below anchor threshold)
+- pregame_elo YoY r = 0.8452 — strong (game-level predictor, not gating)
+- recruiting_3yr_avg YoY r = 0.9758 — extremely stable (prior seed)
+- excitement_index YoY r = 0.1877 — extremely unstable (not usable as prior)
+- rush_rate_std_downs YoY r = 0.5766 — best style/tempo metric (moderate)
+- off_success_rate_std_downs YoY r = 0.5547 — moderate
+- def_pts_per_opportunity_allowed YoY r = 0.5429 — moderate
+- rush_rate_pass_downs YoY r = 0.5177 — moderate
+- off_success_rate_rush YoY r = 0.5111 — moderate
+- off_pts_per_opportunity YoY r = 0.5108 — moderate
+- off_line_yards_per_rush YoY r = 0.4916 — unstable (above 0.40 threshold)
+- off_stuff_rate YoY r = 0.4910 — unstable (above 0.40 threshold)
+- off_success_rate_pass YoY r = 0.4872 — unstable (above 0.40 threshold)
+- off_explosive_rate_10 YoY r = 0.4674 — unstable (above 0.40 threshold)
+- off_epa_rush YoY r = 0.4419 — unstable (above 0.40 threshold)
+- def_stuff_rate_allowed YoY r = 0.4311 — unstable (above 0.40 threshold, confirmed)
+- def_success_rate_rush YoY r = 0.4278 — unstable (above 0.40 threshold)
+- def_success_rate_std_downs YoY r = 0.4182 — unstable (above 0.40 threshold)
+- def_epa_rush_allowed YoY r = 0.4088 — unstable (above 0.40 threshold)
+- time_of_possession YoY r = 0.0574 — extremely unstable
+- off_success_rate_redzone YoY r = 0.0518 — extremely unstable
+- def_sack_rate YoY r = 0.2161 — unstable
 
 ---
 
@@ -408,19 +440,22 @@ df[numeric_cols] = df[numeric_cols].astype(float)
 
 ## Rules Every Session Must Follow
 1. Read this file before touching anything else
-2. Read artifacts/candidate_features.csv — only keep=True columns are authorized
-3. Run schema introspection query before writing any SQL — never guess column names
-4. Write complete cells only — never partial fixes or incremental edits
-5. Use existing helpers — never redefine logic that already exists in the notebook
-6. Cast all Decimal columns to float64 immediately after loading
-7. Cast boolean columns using .map(lambda x: 1 if x is True else (0 if x is False else np.nan)).astype(float)
-8. Do not rewrite verified cells
-9. Do not close the DB connection until the notebook is complete
-10. If a required column is not in the schema output, stop and say so — do not proceed
-11. Use the canonical assign_tier function — do not modify it
-12. Never use nbformat, papermill, or any script to generate notebook files
-13. Every verdict must report spread signal, over/under signal, and moneyline signal separately — never collapse into a single verdict
-14. Conference stratification is mandatory for every partial r test — full population, P4, G5, and each individual conference. Never issue a verdict from global analysis only.
+2. Never take shortcuts or lazy solutions. If a query fails, read the actual schema before rewriting. If data is wrong, diagnose the actual cause before fixing. Never patch inline — rewrite the entire cell. Never guess column names. Never assume a filter handles exclusions it was not designed to handle.
+3. Read artifacts/candidate_features.csv — only keep=True columns are authorized
+4. Run schema introspection query before writing any SQL — never guess column names
+5. Write complete cells only — never partial fixes or incremental edits
+6. Use existing helpers — never redefine logic that already exists in the notebook
+7. Cast all Decimal columns to float64 immediately after loading
+8. Cast boolean columns using `.map(lambda x: 1 if x is True else (0 if x is False else np.nan)).astype(float)`
+9. FBS conference games only, no exceptions. Every game-level query must filter `s.conference != 'FBS Independents'` in the join to `int_team_season_features`. Both teams must have a valid FBS conference. `conference_game = TRUE` alone does not exclude Independents. After loading, assert zero nulls on all controls — any null means a non-FBS team leaked through. If the home conference distribution shows FBS Independents with any row count, stop and fix before proceeding.
+10. Do not rewrite verified cells
+11. Do not close the DB connection until the notebook is complete
+12. If a required column is not in the schema output, stop and say so — do not proceed
+13. Use the canonical assign_tier function — do not modify it
+14. Never use nbformat, papermill, or any script to generate notebook files
+15. Every verdict must report spread signal, over/under signal, and moneyline signal separately — never collapse into a single verdict
+16. Conference stratification is mandatory for every partial r test — full population, P4, G5, and each individual conference. Never issue a verdict from global analysis only.
+17. Season filter mandatory: every query must include AND season IN (2022, 2023, 2024). 2025 is the holdout year and must never appear in training data queries.
 
 ---
 
@@ -441,6 +476,19 @@ def assign_tier(row):
 ```
 
 Pac-12 falls through to G5. FBS Independents handled by team name conditions.
+
+---
+
+### FBS Integrity Check — Mandatory After Every Game Load
+Report this back to me verbatim after answering the confirmation gate questions then tell me exactly what that means:
+
+FBS conference games only. Both teams must have a row in int_team_season_features
+with conference != 'FBS Independents'. conference_game = TRUE does not filter out
+FCS, D2, D3, or Independent opponents. The INNER JOIN to int_team_season_features
+handles non-FBS teams with no season row. The conference != 'FBS Independents'
+filter handles Independents who do have a season row. Both filters are required.
+Show the home conference distribution after every game load — if FBS Independents
+appears with any row count, stop and fix before proceeding.
 
 ---
 
