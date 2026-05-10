@@ -1,7 +1,7 @@
 # CFB Analytics — Model Build Session State
 
 ## Last Updated
-2026-05-09
+2026-05-10
 
 ## Phase
 Model Build — Days 20–33
@@ -36,6 +36,55 @@ Carlo simulation. Goes live: September 24, 2026 (date marker only).
 
 ---
 
+## ⚠️ CRITICAL — Library Decision (LOCKED — Do Not Revisit PyMC)
+**PyMC is replaced by NumPyro.**
+
+PyMC was attempted on Day 20 and failed due to an unresolvable environment
+conflict. The root cause: pytensor (PyMC's backend) requires compiled C
+binaries that pip cannot write to disk on this machine due to the Homebrew
+Python distutils bug. This affected Python 3.9 (Homebrew), Python 3.11
+(Homebrew venv), and Python 3.11 (conda venv created from x86 Anaconda).
+
+NumPyro was chosen as the replacement. It is JAX-based, has no C compilation
+step, and is architecturally equivalent for this model. All prior
+specifications, hierarchy decisions, and distribution choices are
+library-agnostic and translate directly.
+
+**Model code, priors, hierarchy, and all locked decisions are unchanged.**
+Only the library syntax changes.
+
+---
+
+## ⚠️ CRITICAL — Environment (LOCKED)
+**Do not use:**
+- Homebrew Python 3.9 — pytensor dist-info installs but package directory
+  never writes (Homebrew distutils bug, pip 21.x)
+- Homebrew Python 3.11 venv — same distutils bug
+- x86 Anaconda base (Python 3.8) — too old for any modern JAX/NumPyro
+- conda environment created from x86 Anaconda — inherits x86 architecture;
+  JAX fails with AVX instruction error on Apple Silicon
+- conda-forge channel — hangs indefinitely on this machine
+
+**Required environment:**
+Miniforge for ARM (Apple Silicon native). This is the only confirmed path
+that will work. Download from:
+https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-arm64.sh
+
+Setup after installing Miniforge:
+```bash
+conda create -n cfb_model python=3.11 -y
+conda activate cfb_model
+pip install numpyro arviz jupyter ipykernel psycopg2-binary pandas numpy
+python -m ipykernel install --user --name cfb_model --display-name "CFB Model"
+```
+
+Verify before starting any notebook:
+```bash
+python -c "import numpyro; import jax; print(numpyro.__version__, jax.__version__)"
+```
+
+---
+
 ## ⚠️ CRITICAL — Confirmation Gate
 Rewritten each session to reflect what the next notebook must understand.
 
@@ -43,18 +92,31 @@ Rewritten each session to reflect what the next notebook must understand.
 
 Answer these questions in your own words before writing any code:
 
-**Question 1:** What is the difference between a prior specification and a PyMC
-model? Why must Day 20 read prior_specification_draft.md before writing any
-pm. distribution calls? What would go wrong if Day 20 invented a prior that
-isn't in the specification?
+**Question 1:** What is the difference between a prior specification and a
+NumPyro model? Why must Day 20 read prior_specification_draft.md before
+writing any numpyro.sample() calls? What would go wrong if Day 20 invented
+a prior that isn't in the specification?
 
 **Question 2:** The Sun Belt recruiting weight must be non-positive. What does
-that mean in PyMC terms? Name at least two ways to implement a non-positive
+that mean in NumPyro terms? Name at least two ways to implement a non-positive
 constraint and explain which is preferable for this model and why.
 
-**Question 3:** Day 20 writes priors but does not fit the model. What does that
-mean for what Day 20 must produce, and how does Day 23 (first fit) depend on
-Day 20 being complete and correct?
+**Question 3:** Day 20 writes priors but does not fit the model. What does
+that mean for what Day 20 must produce, and how does Day 22 (first fit)
+depend on Day 20 being complete and correct?
+
+---
+
+## Day 20 — What Was Completed
+The confirmation gate was answered correctly before any code was attempted:
+- Question 1: prior specification vs. model distinction — correct
+- Question 2: non-positive Sun Belt constraint — TruncatedNormal(upper=0)
+  identified as correct implementation
+- Question 3: Day 20 scope and dependency chain — correct
+
+No notebook cells were written. The entire session was consumed by
+environment setup failures. See environment section above for full
+diagnosis and resolution path.
 
 ---
 
@@ -62,8 +124,8 @@ Day 20 being complete and correct?
 
 | Day | Notebook | Status | Goal |
 |---|---|---|---|
-| 20 | model_01_prior_specification.ipynb | ❌ not built | Translate every entry in prior_specification_draft.md into PyMC prior distributions. No fitting. Every pm. call cites its EDA justification. |
-| 21 | model_02_architecture.ipynb | ❌ not built | Write hierarchical NegBinom model structure in PyMC. No fitting. Three levels: league → conference → team. Document every design decision. |
+| 20 | model_01_prior_specification.ipynb | ❌ not built | Translate every entry in prior_specification_draft.md into NumPyro prior distributions. No fitting. Every numpyro.sample() call cites its EDA justification. |
+| 21 | model_02_architecture.ipynb | ❌ not built | Write hierarchical NegBinom model structure in NumPyro. No fitting. Three levels: league → conference → team. Document every design decision. |
 | 22 | model_03_first_fit.ipynb | ❌ not built | Fit on 2022–2024 training data. Do not touch 2025 holdout. Record fit time, divergences, initial parameter estimates. |
 | 23 | model_04_prior_predictive_checks.ipynb | ❌ not built | Sample before seeing data. Does it produce plausible CFB scores? Fix priors if it generates 0-point or 150-point games. |
 | 24 | model_05_posterior_checks.ipynb | ❌ not built | R-hat < 1.01, trace plots, energy plots, ESS. Confirm convergence. Investigate divergences. |
@@ -93,7 +155,7 @@ Gold layer begins Day 34.
   pregame_elo (game level — not a prior seed, a game-level predictor)
 - Conference-level pooling provides regularization (ICC marginal 0.02–0.05
   but pooling still improves small-sample estimates)
-- Built in PyMC
+- Built in NumPyro (replaces PyMC — see library decision above)
 
 ---
 
@@ -154,7 +216,7 @@ production launch. If no pregame version clears signal tests, drop these two fea
 
 ## Prior Specification Summary
 Full specification in artifacts/prior_specification_draft.md.
-Day 20 translates this into PyMC code. Summary of distributions:
+Day 20 translates this into NumPyro code. Summary of distributions:
 
 | Parameter | Distribution | Mean | SD | Type |
 |---|---|---|---|---|
@@ -167,6 +229,7 @@ Day 20 translates this into PyMC code. Summary of distributions:
 | hfa_team[t] | Normal (hyperprior) | 0.0 | HalfNormal(2.0) | Weakly informative |
 | sp_weight | Normal | 0.0 | 1.0 | Informative |
 | rec_weight[c] | Normal | 0.0 | 0.5 | Informative |
+| rec_weight[Sun Belt] | TruncatedNormal(upper=0) | 0.0 | 0.5 | Hard constraint |
 | EPA anchors (×2) | Normal | 0.0 | 0.5 | Weakly informative |
 | pregame_elo, elo_sp_divergence | Normal | 0.0 | 0.3 / 0.2 | Weakly informative |
 | Environmental features | Normal | 0.0 | 0.3 / 0.2 | Weakly informative |
@@ -176,6 +239,7 @@ Day 20 translates this into PyMC code. Summary of distributions:
 | Archetype matchups | Normal | 0.0 | 0.3 | Weakly informative |
 
 **Hard constraint:** Sun Belt recruiting_3yr_avg coefficient must be non-positive.
+Implementation: numpyro.sample with TruncatedNormal(high=0).
 
 ---
 
@@ -200,6 +264,7 @@ Full 39-item checklist: artifacts/evaluation_checklist.md
 ---
 
 ## Locked Decisions — Do Not Revisit
+- Library: NumPyro (PyMC abandoned due to pytensor environment failure)
 - Likelihood: Negative Binomial
 - Three-level hierarchy: league → conference → team
 - Dispersion: single r parameter to start; add conference-specific r only if
@@ -208,7 +273,7 @@ Full 39-item checklist: artifacts/evaluation_checklist.md
 - SP+ prior weight: does not decay monotonically — remains relevant through games 9-12
 - SP+ components (sp_offense, sp_defense): excluded; use sp_rating composite only
 - recruiting_3yr_avg: prior seed only — never a game-level predictor
-- Sun Belt recruiting weight: non-positive (hard constraint)
+- Sun Belt recruiting weight: non-positive (hard constraint); TruncatedNormal(high=0)
 - Early-season null handling: Approach A — impute with season-to-date prior
 - ELO/SP+ divergence: compute in notebook first; add to dbt only after model confirms
 - Archetype features: deployable pregame version required before production launch
@@ -326,7 +391,7 @@ def assign_tier(row):
 11. Use the canonical assign_tier function — do not modify it
 12. Season filter mandatory: every query must include
     AND season IN (2022, 2023, 2024). 2025 is holdout.
-13. Never call pm.sample() in Day 20 — prior specification only
+13. Never call numpyro.infer.MCMC.run() in Day 20 — prior specification only
 14. Every prior in Day 20 must cite its entry in prior_specification_draft.md
 
 ---
@@ -347,7 +412,7 @@ appears with any row count, stop and fix before proceeding.
 |---|---|
 | artifacts/final_features.csv | 23 included features with complete prior specs — authoritative feature list for model build |
 | artifacts/master_verdict.csv | 93 rows — full EDA verdict record |
-| artifacts/prior_specification_draft.md | Day 20 input — translate into PyMC code |
+| artifacts/prior_specification_draft.md | Day 20 input — translate into NumPyro code |
 | artifacts/evaluation_checklist.md | 39-item pass/fail checklist — Day 33 works through this |
 | artifacts/ambiguity_resolution.md | 5 binding ambiguity decisions |
 | artifacts/candidate_features.csv | 185 keep=True features — reference only |
