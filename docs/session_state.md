@@ -1,7 +1,7 @@
 # CFB Analytics — Session State
 
 ## Last Updated
-2026-05-05
+2026-05-09
 
 ---
 
@@ -91,21 +91,22 @@ Every verdict must state separately:
 ## ⚠️ CRITICAL — Confirmation Gate
 Rewritten each session to reflect what the next notebook must understand.
 
-**Next notebook: Day 17 — Game Script Analysis**
+**Next notebook: Day 20 — Prior Specification**
 
 Answer these questions in your own words before writing any code:
 
-**Question 1:** What is the correct distinction between close-game EPA features and
-game-script features? Why should Day 17 test whether game-script features add signal
-beyond the close-game EPA anchor pair instead of simply rediscovering the already
-confirmed close-game EPA finding?
+**Question 1:** What is the difference between a prior specification and a PyMC
+model? Why must Day 20 read prior_specification_draft.md before writing any
+pm. distribution calls? What would go wrong if Day 20 invented a prior that
+isn't in the specification?
 
-**Question 2:** Which game outcomes must Day 17 test separately? Explain why spread,
-over/under, and moneyline variance cannot be collapsed into one verdict.
+**Question 2:** The Sun Belt recruiting weight must be non-positive. What does
+that mean in PyMC terms? Name at least two ways to implement a non-positive
+constraint and explain which is preferable for this model and why.
 
-**Question 3:** What controls and stratifications are mandatory in Day 17? Explain
-why full-population-only results are incomplete, and why conference-game trajectory
-matters for a Bayesian model whose information state changes across the season.
+**Question 3:** Day 20 writes priors but does not fit the model. What does that
+mean for what Day 20 must produce, and how does Day 23 (first fit) depend on
+Day 20 being complete and correct?
 
 ---
 
@@ -146,9 +147,9 @@ Goes live: September 24, 2026. Date marker only.
 | 14 | Claude Code session | ✅ complete | Play-by-play schema verified. 31 new candidates added. Field zone derivable via yards_to_goal. Spatial/directional features permanently closed. raw.odds confirmed as 2026 live validation target only — no historical closing lines. |
 | 15 | eda_09_style_tempo_delta.ipynb | ✅ complete | Rebuilt correctly at game level with in-game style metrics. Spread signal strongest. O/U signal weak. Moneyline variance signal mainly tied to sack-rate mismatch. Only rush_rate_std_downs and rush_rate_pass_downs are weak prior-seed candidates. |
 | 16 | eda_10_style_archetypes.ipynb | ✅ complete | Rebuilt from corrected EDA 9. k=4 offense and k=4 defense archetypes validated. Archetypes are strongest for over/under, weak secondary for spread, not valid for moneyline variance, and not stable enough for prior seeding. |
-| 17 | eda_11_game_script.ipynb | ❌ not built | Game script & close-game signals. Must test whether game-script features add signal beyond the close-game EPA pair and SP+ delta. |
-| 18 | eda_12_evaluation_framework.ipynb | ❌ not built | Written evaluation checklist for model sign-off |
-| 19 | eda_13_eda_finalization.ipynb | ❌ not built | Consolidate all verdict CSVs into master_verdict.csv; produce final_features.csv; resolve all ambiguities; write prior specification draft |
+| 17 | eda_11_game_script.ipynb | ✅ complete | game_script_avg_margin and game_script_ordinal: diagnostic_only (retrospective, near-tautological with point_differential). close_game_play_count_delta: conference_specific_candidate for spread (6/10 conferences, holds from game_1). |
+| 18 | eda_12_evaluation_framework.ipynb | ✅ complete | 39-item pass/fail evaluation checklist written to artifacts/evaluation_checklist.md |
+| 19 | eda_13_eda_finalization.ipynb | ✅ complete | master_verdict.csv (93 rows, 23 include), final_features.csv (23 rows, all with prior specs), ambiguity_resolution.md (5 binding decisions), prior_specification_draft.md |
 
 ---
 
@@ -175,76 +176,32 @@ Gold layer begins Day 34.
 ---
 
 ## What The Next Session Must Build
-Day 17: `eda_11_game_script.ipynb`
+Day 20: `model_01_prior_specification.ipynb`
 
 Goal:
-Evaluate game script and close-game signals as game-level predictors for the
-hierarchical Negative Binomial score-distribution model.
+Translate every entry in artifacts/prior_specification_draft.md into a
+written PyMC prior distribution. No model fitting. No data loading beyond
+what is needed to establish team and conference index mappings.
 
-The notebook must answer whether game-script-related features improve prediction of:
+This notebook produces one output: a fully specified PyMC model object with
+all priors defined and documented. Every pm. distribution call must include
+a comment citing the EDA finding from prior_specification_draft.md that
+motivated it.
 
-- point differential / spread
-- total points / over-under
-- score distribution variance / moneyline
+Rules:
+- Read prior_specification_draft.md before writing any code
+- Do not invent priors — if a parameter is missing from the spec, stop and flag it
+- Sun Belt recruiting weight must be non-positive (hard constraint)
+- Conference-specific feature weights are implemented as coefficient ×
+  conference indicator — not as separate conference-level distributions
+- No fitting in this notebook — pm.sample() is not called
+- Document every design decision and the spec entry that motivated it
 
-These must be reported separately. Do not collapse them into one verdict.
-
-Required methodology:
-- Use 2022–2024 only.
-- 2025 is holdout and must not appear in any EDA query.
-- FBS conference games only.
-- Both teams must join through `int_team_season_features` with `conference != 'FBS Independents'`.
-- `conference_game = TRUE` alone is insufficient.
-- Show conference distributions after every game load.
-- Use full population, P4, G5, and each individual conference for every signal test.
-- Use conference-game trajectory buckets:
-  - conference game 1
-  - conference games 2–4
-  - conference games 5–8
-  - conference games 9–12
-- YoY stability is only relevant if a feature is being considered for prior construction.
-- Game-level predictors are not gated by YoY stability.
-
-Required candidate areas:
-- `game_script`
-- `game_script_avg_margin`
-- `close_game_play_count`
-- `close_game_def_play_count`
-- script / competitiveness / margin-profile features already available in `int_game_team_features`
-- blowout / garbage-time proxies if safely derivable from existing columns
-- close-game EPA already confirmed as anchor in Day 8, so Day 17 must test whether script-related features add anything beyond the close-game EPA pair
-
-Do not use:
-- 2025
-- raw.odds; `raw.odds` is 2026 live validation only
-- season averages as direct game-level signal tests
-- any feature that is only known after the game unless the notebook explicitly labels it as retrospective diagnostic only
-
-Required controls:
-- `close_game_epa_delta`
-- `close_game_def_epa_delta` when testing whether game-script features add beyond both sides of close-game EPA
-- `sp_rating_delta`
-
-Minimum required output tables:
-1. Full-population signal table
-2. P4/G5 signal table
-3. Individual conference signal table
-4. Within-season trajectory table
-5. Verdict table with separate spread, O/U, and moneyline variance findings
-6. Final markdown summary cell
-
-Required final verdict categories:
-
-```text
-anchor_candidate
-supporting_candidate
-conference_specific_candidate
-trajectory_specific_candidate
-diagnostic_only
-redundant_with_close_game_epa
-reject_no_signal
-insufficient_sample
-```
+### FBS Integrity Check for Day 20
+Day 20 loads team and conference index mappings from int_team_season_features.
+The standard FBS integrity check applies: both teams must have a row in
+int_team_season_features with conference != 'FBS Independents'. Show conference
+distribution after every load and assert FBS Independents does not appear.
 
 ---
 
@@ -502,6 +459,103 @@ Final EDA 10 verdict:
 - Do not directly promote in-game archetypes into the production pregame model
 - If archetypes are used later, a deployable pregame/rolling version must be tested first
 
+### Day 17 — Game Script Analysis
+- game_script_avg_margin_delta: diagnostic_only — raw r=0.9075 with
+  point_differential. R²=0.8235 alone. Average margin across game IS the score
+  by construction. Near-tautological. Post-game feature only. Do not use as
+  model input.
+- game_script_ordinal_delta: diagnostic_only — raw r=0.8628 with
+  point_differential. Ordinal categories derived from in-game score margin.
+  Post-game feature only. Do not use as model input.
+- close_game_play_count_delta: conference_specific_candidate — spread partial
+  r=0.1834 full population (p<0.0001). Not tautological (raw r=0.2256).
+  Signal holds in 6/10 conferences: ACC, American Athletic, Big 12,
+  Mid-American, Pac-12, Sun Belt. Absent in Big Ten, Conference USA,
+  Mountain West, SEC. No clean tier split.
+  Trajectory: holds from game_1 (r=0.1676), strengthens monotonically to
+  games_9_12 (r=0.2480). Available at all information states.
+  O/U: Big 12 only (r=-0.2282, p=0.0019). game_1 bucket (r=0.1713) narrow.
+  Too isolated to generalize.
+  Moneyline variance: no signal across full population or any trajectory bucket.
+  YoY stability: not applicable — game-level predictor.
+  Prior seed: not applicable.
+
+  ### Day 18 — Evaluation Framework
+This notebook produced a document, not signal tests. No partial r values.
+No feature verdicts. No new EDA findings.
+
+Output: artifacts/evaluation_checklist.md — 39-item pass/fail checklist
+that model_14_signoff.ipynb (Day 33) works through item by item.
+Model is not signed off until every item has an explicit PASS or a
+documented exception with written justification.
+
+Checklist dimensions and item counts:
+- Convergence and Sampling Quality (5 items): R-hat, ESS, divergences,
+  trace plots, BFMI energy plots
+- Prior Predictive Checks (3 items): score range, VMR consistency,
+  total points distribution
+- Posterior Predictive Checks (4 items): overall score distribution fit,
+  conference-level calibration, dispersion parameter adequacy, tail behavior
+- Holdout Evaluation — 2025 season (4 items): Brier score vs baseline,
+  win probability calibration curve, spread MAE by margin bucket,
+  over/under calibration
+- Subgroup Evaluation (8 items): P4 Brier, G5 Brier, calibration by
+  individual conference, rivalry games, cross-tier matchups, neutral site
+  games, conf game 1 (prior-driven), conf games 5–8 (posterior-informed)
+- Edge Case Stress Tests (6 items): elevation >= 2000ft, travel >= 1500mi,
+  timezone abs >= 2hr, wind_chill <= 25°F, thin-data teams, conference
+  switchers
+- Feature Contribution Checks (5 items): EPA anchor pair direction, SP+
+  prior weight decay, conference-specific features fire correctly,
+  threshold-activated features activate correctly, Sun Belt recruiting
+  prior direction
+- Known Failure Modes (4 items): conf game 1 null handling, G5 thin-data
+  estimates, cross-tier miscalibration, Sun Belt recruiting direction
+  (duplicate gate from feature contribution checks)
+
+Key thresholds established:
+- R-hat < 1.01 for all parameters
+- ESS_bulk >= 400 and ESS_tail >= 400 for all parameters
+- Zero divergences post-warmup
+- BFMI > 0.3 for all chains
+- Prior predictive: 95% of samples within 0–70 points, VMR 3.0–10.0
+- Posterior predictive mean within ±2 points of observed mean per team
+- Conference-level posterior predictive mean within ±3 points of observed
+- Overall Brier score must beat SP+-only baseline
+- Win probability calibration within ±5pp per decile bucket (n >= 20)
+- Spread MAE <= 14 points overall, no margin bucket exceeding 18 points
+- P4 Brier <= 0.23, G5 Brier <= 0.25
+- All 10 conferences calibrated within ±8pp (n >= 10)
+- Cross-tier mean P4 win probability vs G5 between 0.72 and 0.88
+- Sun Belt recruiting prior weight must be non-positive
+
+### Day 19 — EDA Finalization
+No new signal tests. Consolidation only.
+
+master_verdict.csv: 93 rows total. 23 include, 70 exclude.
+- Anchor features (3): close_game_epa_per_play, close_game_def_epa_per_play,
+  away_elevation_delta_ft
+- Prior seeds (2): sp_rating, recruiting_3yr_avg
+- Conference-specific (8): last3_off_epa_avg, last3_def_epa_avg,
+  last3_points_scored_avg, last3_points_allowed_avg, days_since_last_game,
+  close_game_play_count_delta, offense_archetype_matchup, defense_archetype_matchup
+- Supporting (10): all remaining included game-level features
+
+Five ambiguity resolutions (all binding):
+1. close_game_play_count_delta → INCLUDE for 6 confirmed conferences
+2. Style archetype matchup features (×4) → INCLUDE as game-level O/U features;
+   deployable pregame version required before September 24, 2026 launch
+3. last3 rolling EPA conference lists → INCLUDE with explicit separate lists
+   (offense: ACC, Mid-American, SEC; defense: American Athletic, Big Ten,
+   Conference USA, Mid-American, Pac-12, Sun Belt)
+4. rush_rate prior seeds → EXCLUDE as prior seeds (YoY r below 0.5 threshold);
+   retained as game-level supporting predictors
+5. elo_sp_divergence → INCLUDE computed in notebook; add to dbt after model confirms
+
+Prior specification draft: every model parameter specified with distribution
+family, mean, SD, informative/weakly-informative label, and EDA justification.
+Sun Belt recruiting weight hard-constrained to non-positive.
+
 ---
 
 ## Decisions Confirmed by EDA
@@ -567,6 +621,13 @@ Final EDA 10 verdict:
 - EDA training population: 2022–2024 only. 2025 is holdout — excluded from all EDA signal tests, YoY stability calculations, and cluster fitting.
 - raw.plays performance: never scan with IN clause on large game_id list or multiple INNER JOINs. Always materialize valid game_ids into a temp table with PRIMARY KEY first, then join raw.plays to temp table once.
 - EDA 10 archetypes: valid primarily for totals, weak for spread, not valid for moneyline variance, not stable enough for prior seeding.
+- game_script_avg_margin: diagnostic_only — post-game, near-tautological with
+  point_differential (raw r=0.9075). Do not use as model input.
+- game_script_ordinal: diagnostic_only — post-game, derived from in-game score
+  margin (raw r=0.8628). Do not use as model input.
+- close_game_play_count_delta: conference_specific_candidate for spread.
+  Signal in ACC, American Athletic, Big 12, Mid-American, Pac-12, Sun Belt.
+  Not valid for O/U (except Big 12), moneyline variance, or prior seeding.
 
 ---
 
@@ -582,6 +643,13 @@ Final EDA 10 verdict:
 | artifacts/elo_excitement_verdict.csv | ✅ valid | Day 13 — rerun on 2022–2024 clean data |
 | artifacts/style_tempo_verdict.csv | ✅ valid | Day 15 rebuilt correctly from in-game team-game style metrics |
 | artifacts/style_tempo_summary.json | ✅ valid | Day 15 rebuilt summary |
+| artifacts/game_script_verdict.csv | ✅ valid | Day 17 — game script analysis |
+| artifacts/evaluation_checklist.md | ✅ valid | Day 18 — 39-item pass/fail checklist for model_14_signoff.ipynb |
+| artifacts/eda_12_completion.json  | ✅ valid | Day 18 — completion record |
+| artifacts/master_verdict.csv | ✅ valid | Day 19 — 93 rows, 23 include, 70 exclude |
+| artifacts/final_features.csv | ✅ valid | Day 19 — 23 included features with complete prior specs |
+| artifacts/ambiguity_resolution.md | ✅ valid | Day 19 — 5 binding ambiguity resolutions |
+| artifacts/prior_specification_draft.md | ✅ valid | Day 19 — full prior spec for all 23 features + hierarchy parameters |
 
 ---
 

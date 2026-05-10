@@ -1,0 +1,72 @@
+{
+  "notebook": "eda_11_game_script.ipynb",
+  "phase": "data_prep",
+  "seasons": [
+    2022,
+    2023,
+    2024
+  ],
+  "row_count_games": 1604,
+  "row_count_team_games": 3214,
+  "candidate_base_columns": [
+    "close_game_def_play_count",
+    "close_game_play_count",
+    "game_script",
+    "game_script_avg_margin"
+  ],
+  "numeric_candidate_columns": [
+    "close_game_def_play_count",
+    "close_game_play_count",
+    "game_script_avg_margin"
+  ],
+  "categorical_candidate_columns": [
+    "game_script"
+  ],
+  "numeric_analysis_features": [
+    "close_game_def_play_count_delta",
+    "close_game_def_play_count_abs_delta",
+    "close_game_def_play_count_sum",
+    "close_game_play_count_delta",
+    "close_game_play_count_abs_delta",
+    "close_game_play_count_sum",
+    "game_script_avg_margin_delta",
+    "game_script_avg_margin_abs_delta",
+    "game_script_avg_margin_sum"
+  ],
+  "categorical_analysis_features": [
+    "game_script_matchup",
+    "game_script_same"
+  ],
+  "analysis_feature_columns": [
+    "close_game_def_play_count_delta",
+    "close_game_def_play_count_abs_delta",
+    "close_game_def_play_count_sum",
+    "close_game_play_count_delta",
+    "close_game_play_count_abs_delta",
+    "close_game_play_count_sum",
+    "game_script_avg_margin_delta",
+    "game_script_avg_margin_abs_delta",
+    "game_script_avg_margin_sum",
+    "game_script_matchup",
+    "game_script_same"
+  ],
+  "required_controls": [
+    "close_game_epa_delta",
+    "close_game_def_epa_delta",
+    "sp_rating_delta"
+  ],
+  "outcomes": [
+    "point_differential",
+    "total_points",
+    "abs_spread_residual",
+    "squared_spread_residual"
+  ],
+  "filters": {
+    "season_filter": "season IN (2022, 2023, 2024)",
+    "conference_game": true,
+    "both_teams_join_int_team_season_features": true,
+    "conference_exclusion": "conference != 'FBS Independents'",
+    "raw_odds_used": false,
+    "year_2025_used": false
+  }
+}

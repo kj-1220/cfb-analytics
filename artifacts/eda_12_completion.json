@@ -1,0 +1,11 @@
+{
+  "notebook": "eda_12_evaluation_framework.ipynb",
+  "completed": "2026-05-09T20:22:19",
+  "output": "artifacts/evaluation_checklist.md",
+  "items": 39,
+  "dimensions": 8,
+  "next_notebook": "eda_13_eda_finalization.ipynb",
+  "next_goal": "Consolidate all verdict CSVs into master_verdict.csv. Produce final_features.csv. Resolve all ambiguities. Write prior specification draft.",
+  "sign_off_notebook": "model_14_signoff.ipynb",
+  "sign_off_day": 33
+}

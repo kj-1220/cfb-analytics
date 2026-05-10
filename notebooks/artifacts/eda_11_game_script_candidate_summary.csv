@@ -1,0 +1,12 @@
+base_feature,analysis_feature,feature_type,non_null_games,null_games,mean,std,min,max,unique_values
+close_game_def_play_count,close_game_def_play_count_delta,numeric,1604,0,-0.36034912718204487,15.829836682202638,-67.0,51.0,94
+close_game_def_play_count,close_game_def_play_count_abs_delta,numeric,1604,0,12.518703241895262,9.690096265190597,0.0,67.0,51
+close_game_def_play_count,close_game_def_play_count_sum,numeric,1604,0,129.0224438902743,17.103719995714286,32.0,191.0,109
+close_game_play_count,close_game_play_count_delta,numeric,1604,0,0.36034912718204487,15.829836682202638,-51.0,67.0,94
+close_game_play_count,close_game_play_count_abs_delta,numeric,1604,0,12.518703241895262,9.690096265190597,0.0,67.0,51
+close_game_play_count,close_game_play_count_sum,numeric,1604,0,129.0224438902743,17.103719995714286,32.0,191.0,109
+game_script_avg_margin,game_script_avg_margin_delta,numeric,1604,0,2.6560306405938627,22.04584711827544,-63.05571428571429,78.54249011857708,1604
+game_script_avg_margin,game_script_avg_margin_abs_delta,numeric,1604,0,17.518808378768533,13.637381303074099,0.01025641025641022,78.54249011857708,1604
+game_script_avg_margin,game_script_avg_margin_sum,numeric,1604,0,-1.8201820754989722,1.6016748377489831,-8.90095238095238,5.87914967967385,1602
+game_script,game_script_matchup,categorical,1604,0,,,,,10
+game_script,game_script_same,binary,1604,0,0.5473815461346634,0.4979051577956934,0.0,1.0,2
