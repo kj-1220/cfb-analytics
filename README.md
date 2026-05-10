@@ -276,16 +276,16 @@ psql "host=127.0.0.1 port=5455 dbname=postgres user=postgres password=postgres" 
 | 3 | Silver layer — 8 staging views + 3 int tables (552 + 552 + 29,472 rows) | ✅ Complete |
 | 3b | Defensive feature expansion — havoc bug fixed, field position investigated | ✅ Complete |
 | 4 | int_game_environment — elevation, travel, timezone, weather additions | ✅ Complete |
-| 4b | EDA — feature correlation and selection | 🔲 Next |
-| 5 | Gold layer — mart tables + semantic layer | 🔲 |
-| 6 | Bayesian model — hierarchical Poisson + Monte Carlo | 🔲 |
-| 7 | RAG corpus — pgvector + 4 document categories | 🔲 |
-| 8 | Claude integration — tool use + prompt engineering + eval | 🔲 |
-| 9 | FastAPI backend — all endpoints + auth | 🔲 |
-| 10 | React frontend — matchup page + dashboard + chat | 🔲 |
-| 11 | Weekly ETL pipeline — automated season refresh | 🔲 |
-| 12 | Integration testing + hardening | 🔲 |
-| 13 | Production deployment | 🔲 |
+| 5 | EDA — feature correlation and selection | ✅ Complete |
+| 6 | Bayesian model — hierarchical Poisson + Monte Carlo | 🔲 Next |
+| 7 | Gold layer — mart tables + semantic layer | 🔲 |
+| 8 | RAG corpus — pgvector + 4 document categories | 🔲 |
+| 9 | Claude integration — tool use + prompt engineering + eval | 🔲 |
+| 10 | FastAPI backend — all endpoints + auth | 🔲 |
+| 11 | React frontend — matchup page + dashboard + chat | 🔲 |
+| 12 | Weekly ETL pipeline — automated season refresh | 🔲 |
+| 13 | Integration testing + hardening | 🔲 |
+| 14 | Production deployment | 🔲 |
 | **Live** | **Liberty vs Coastal Carolina** | **Sept 24, 2026** |
 
 **Realistic completion for a production-ready system: late July to mid-August 2026.**
