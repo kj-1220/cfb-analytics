@@ -1,122 +1,52 @@
-# CFB Analytics — Model Build Session State
-
-## Last Updated
-2026-05-10
-
-## Phase
-Model Build — Days 20–33
-EDA is complete and locked. All feature decisions are final.
-For EDA decision history, see docs/eda_session_state.md.
-For feature verdicts, see artifacts/master_verdict.csv.
-For included features with prior specs, see artifacts/final_features.csv.
-
----
-
-## ⚠️ CRITICAL — How Notebooks Are Written In This Project
-This rule overrides everything else. Read it before doing anything.
-
-Notebooks are written cell by cell, directly in the conversation, as executable
-Python code blocks.
-
-- Each cell is written as a code block in the response
-- The user copies it into Jupyter manually and runs it
-- Output is verified before the next cell is written
-- NEVER use nbformat, papermill, or any script to generate notebook files
-- NEVER write a Python script that constructs a notebook object
-- NEVER batch all cells into a single response — write one cell at a time
-- If a cell produces an error, rewrite the ENTIRE cell — never patch inline
-- Do not proceed to the next cell until the current one has been confirmed
-
----
-
-## ⚠️ CRITICAL — What This Model Does
-Hierarchical Negative Binomial model predicting score distributions for any
-FBS conference game. Outputs: spread, moneyline, over/under derived via Monte
-Carlo simulation. Goes live: September 24, 2026 (date marker only).
-
----
-
-## ⚠️ CRITICAL — Library Decision (LOCKED — Do Not Revisit PyMC)
-**PyMC is replaced by NumPyro.**
-
-PyMC was attempted on Day 20 and failed due to an unresolvable environment
-conflict. The root cause: pytensor (PyMC's backend) requires compiled C
-binaries that pip cannot write to disk on this machine due to the Homebrew
-Python distutils bug. This affected Python 3.9 (Homebrew), Python 3.11
-(Homebrew venv), and Python 3.11 (conda venv created from x86 Anaconda).
-
-NumPyro was chosen as the replacement. It is JAX-based, has no C compilation
-step, and is architecturally equivalent for this model. All prior
-specifications, hierarchy decisions, and distribution choices are
-library-agnostic and translate directly.
-
-**Model code, priors, hierarchy, and all locked decisions are unchanged.**
-Only the library syntax changes.
-
----
-
-## ⚠️ CRITICAL — Environment (LOCKED)
-**Do not use:**
-- Homebrew Python 3.9 — pytensor dist-info installs but package directory
-  never writes (Homebrew distutils bug, pip 21.x)
-- Homebrew Python 3.11 venv — same distutils bug
-- x86 Anaconda base (Python 3.8) — too old for any modern JAX/NumPyro
-- conda environment created from x86 Anaconda — inherits x86 architecture;
-  JAX fails with AVX instruction error on Apple Silicon
-- conda-forge channel — hangs indefinitely on this machine
-
-**Required environment:**
-Miniforge for ARM (Apple Silicon native). This is the only confirmed path
-that will work. Download from:
-https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-arm64.sh
-
-Setup after installing Miniforge:
-```bash
-conda create -n cfb_model python=3.11 -y
-conda activate cfb_model
-pip install numpyro arviz jupyter ipykernel psycopg2-binary pandas numpy
-python -m ipykernel install --user --name cfb_model --display-name "CFB Model"
-```
-
-Verify before starting any notebook:
-```bash
-python -c "import numpyro; import jax; print(numpyro.__version__, jax.__version__)"
-```
+Always select kernel "CFB Model (ARM)" when opening any notebook in this
+project. Do not use any other kernel.
 
 ---
 
 ## ⚠️ CRITICAL — Confirmation Gate
 Rewritten each session to reflect what the next notebook must understand.
 
-**Next notebook: Day 20 — Prior Specification**
+**Next notebook: Day 21 — Model Architecture**
 
 Answer these questions in your own words before writing any code:
 
-**Question 1:** What is the difference between a prior specification and a
-NumPyro model? Why must Day 20 read prior_specification_draft.md before
-writing any numpyro.sample() calls? What would go wrong if Day 20 invented
-a prior that isn't in the specification?
+**Question 1:** Day 21 writes the model architecture but does not fit. What
+is the difference between the prior specification function from Day 20 and
+the full model function Day 21 must produce? What does Day 21 add that Day
+20 does not have?
 
-**Question 2:** The Sun Belt recruiting weight must be non-positive. What does
-that mean in NumPyro terms? Name at least two ways to implement a non-positive
-constraint and explain which is preferable for this model and why.
+**Question 2:** The model form is
+`log(mu) = team_attack + opponent_defense + home_advantage +
+environmental_adjusters + game_level_features`.
+How does the three-level hierarchy connect to this equation — specifically,
+how do conference-level parameters enter the log-mu calculation?
 
-**Question 3:** Day 20 writes priors but does not fit the model. What does
-that mean for what Day 20 must produce, and how does Day 22 (first fit)
-depend on Day 20 being complete and correct?
+**Question 3:** Conference-scoped features must be zeroed outside their
+confirmed conference list. How is that implemented in the model function
+without creating separate priors per conference for game-level features?
 
 ---
 
 ## Day 20 — What Was Completed
-The confirmation gate was answered correctly before any code was attempted:
-- Question 1: prior specification vs. model distinction — correct
-- Question 2: non-positive Sun Belt constraint — TruncatedNormal(upper=0)
-  identified as correct implementation
-- Question 3: Day 20 scope and dependency chain — correct
-
-No notebook cells were written. The entire session was consumed by
-environment setup failures. See environment section above for full
-diagnosis and resolution path.
+- Confirmation gate answered correctly before any code was attempted
+- Environment diagnosis: cfb_model (x86 Anaconda) failed with JAX AVX
+  instruction error on Apple Silicon — same root cause as original PyMC
+  failure
+- Miniforge ARM environment created: cfb_model_arm
+  (~/miniforge3/envs/cfb_model_arm/bin/python)
+- NumPyro 0.21.0 and JAX 0.10.0 confirmed working on cpu backend
+- Kernel registered as "CFB Model (ARM)"
+- model_01_prior_specification.ipynb completed — 6 cells:
+  - Cell 1: imports and environment verification
+  - Cell 2: league-level priors (mu_league, hfa_league, r_negbinom)
+  - Cell 3: conference-level priors (sigma_conference, mu_conference x10)
+  - Cell 4: team-level priors (alpha_team, delta_team, hfa_team, sp_weight,
+    rec_weight with Sun Belt hard constraint)
+  - Cell 5: game-level feature priors (23 coefficients)
+  - Cell 6: full model assembly and prior predictive verification
+- 36 parameters sampled successfully
+- Sun Belt constraint confirmed: rec_weight_sunbelt = -0.3398 (non-positive)
+- Markdown summary added as final cell
 
 ---
 
@@ -124,7 +54,7 @@ diagnosis and resolution path.
 
 | Day | Notebook | Status | Goal |
 |---|---|---|---|
-| 20 | model_01_prior_specification.ipynb | ❌ not built | Translate every entry in prior_specification_draft.md into NumPyro prior distributions. No fitting. Every numpyro.sample() call cites its EDA justification. |
+| 20 | model_01_prior_specification.ipynb | ✅ complete | Translate every entry in prior_specification_draft.md into NumPyro prior distributions. No fitting. Every numpyro.sample() call cites its EDA justification. |
 | 21 | model_02_architecture.ipynb | ❌ not built | Write hierarchical NegBinom model structure in NumPyro. No fitting. Three levels: league → conference → team. Document every design decision. |
 | 22 | model_03_first_fit.ipynb | ❌ not built | Fit on 2022–2024 training data. Do not touch 2025 holdout. Record fit time, divergences, initial parameter estimates. |
 | 23 | model_04_prior_predictive_checks.ipynb | ❌ not built | Sample before seeing data. Does it produce plausible CFB scores? Fix priors if it generates 0-point or 150-point games. |
@@ -265,6 +195,7 @@ Full 39-item checklist: artifacts/evaluation_checklist.md
 
 ## Locked Decisions — Do Not Revisit
 - Library: NumPyro (PyMC abandoned due to pytensor environment failure)
+- pytensor: explicitly banned — do not install, import, or reference
 - Likelihood: Negative Binomial
 - Three-level hierarchy: league → conference → team
 - Dispersion: single r parameter to start; add conference-specific r only if
