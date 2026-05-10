@@ -274,18 +274,18 @@ psql "host=127.0.0.1 port=5455 dbname=postgres user=postgres password=postgres" 
 | 1 | Infrastructure — Docker, Postgres, dbt, GitHub | ✅ Complete |
 | 2 | Bronze layer — 10 raw tables, 1M+ rows incl. game_weather | ✅ Complete |
 | 3 | Silver layer — 8 staging views + 3 int tables (552 + 552 + 29,472 rows) | ✅ Complete |
-| 3b | Defensive feature expansion — havoc bug fixed, field position investigated | ✅ Complete |
-| 4 | int_game_environment — elevation, travel, timezone, weather additions | ✅ Complete |
-| 5 | EDA — feature correlation and selection | ✅ Complete |
-| 6 | Bayesian model — hierarchical Poisson + Monte Carlo | 🔲 Next |
-| 7 | Gold layer — mart tables + semantic layer | 🔲 |
-| 8 | RAG corpus — pgvector + 4 document categories | 🔲 |
-| 9 | Claude integration — tool use + prompt engineering + eval | 🔲 |
-| 10 | FastAPI backend — all endpoints + auth | 🔲 |
-| 11 | React frontend — matchup page + dashboard + chat | 🔲 |
-| 12 | Weekly ETL pipeline — automated season refresh | 🔲 |
-| 13 | Integration testing + hardening | 🔲 |
-| 14 | Production deployment | 🔲 |
+| 4 | Defensive feature expansion — havoc bug fixed, field position investigated | ✅ Complete |
+| 5 | int_game_environment — elevation, travel, timezone, weather additions | ✅ Complete |
+| 6 | EDA — feature correlation and selection | ✅ Complete |
+| 7 | Bayesian model — hierarchical Poisson + Monte Carlo | 🔲 Next |
+| 8 | Gold layer — mart tables + semantic layer | 🔲 |
+| 9 | RAG corpus — pgvector + 4 document categories | 🔲 |
+| 10 | Claude integration — tool use + prompt engineering + eval | 🔲 |
+| 11 | FastAPI backend — all endpoints + auth | 🔲 |
+| 12 | React frontend — matchup page + dashboard + chat | 🔲 |
+| 13 | Weekly ETL pipeline — automated season refresh | 🔲 |
+| 14 | Integration testing + hardening | 🔲 |
+| 15 | Production deployment | 🔲 |
 | **Live** | **Liberty vs Coastal Carolina** | **Sept 24, 2026** |
 
 **Realistic completion for a production-ready system: late July to mid-August 2026.**
