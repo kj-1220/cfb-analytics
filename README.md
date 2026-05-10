@@ -277,7 +277,7 @@ psql "host=127.0.0.1 port=5455 dbname=postgres user=postgres password=postgres" 
 | 4 | Defensive feature expansion — havoc bug fixed, field position investigated | ✅ Complete |
 | 5 | int_game_environment — elevation, travel, timezone, weather additions | ✅ Complete |
 | 6 | EDA — feature correlation and selection | ✅ Complete |
-| 7 | Bayesian model — hierarchical Poisson + Monte Carlo | 🔲 Next |
+| 7 | Bayesian model — Negative Binomial + Monte Carlo | 🔲 Next |
 | 8 | Gold layer — mart tables + semantic layer | 🔲 |
 | 9 | RAG corpus — pgvector + 4 document categories | 🔲 |
 | 10 | Claude integration — tool use + prompt engineering + eval | 🔲 |
