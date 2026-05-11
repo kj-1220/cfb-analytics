@@ -6,26 +6,74 @@ project. Do not use any other kernel.
 ## ⚠️ CRITICAL — Confirmation Gate
 Rewritten each session to reflect what the next notebook must understand.
 
-**Next notebook: Day 21 — Model Architecture**
+**Next notebook: Day 23 — First Fit**
 
 Answer these questions in your own words before writing any code:
 
-**Question 1:** Day 21 writes the model architecture but does not fit. What
-is the difference between the prior specification function from Day 20 and
-the full model function Day 21 must produce? What does Day 21 add that Day
-20 does not have?
+**Question 1:** Day 23 loads training data from `int.int_game_model_features`.
+What is the granularity of that table? What join is required to get opponent
+index arrays, and what season filter must be applied? Why is 2025 excluded?
 
-**Question 2:** The model form is
-`log(mu) = team_attack + opponent_defense + home_advantage +
-environmental_adjusters + game_level_features`.
-How does the three-level hierarchy connect to this equation — specifically,
-how do conference-level parameters enter the log-mu calculation?
+**Question 2:** `model_cfb()` requires `team_idx`, `opp_idx`, and `conf_idx` as
+integer arrays. Describe exactly how these are built from the training DataFrame —
+what uniqueness key is used for teams, what lookup table maps strings to integers,
+and what must be true about the index ranges relative to `N_teams` and
+`N_CONFERENCES`.
 
-**Question 3:** Conference-scoped features must be zeroed outside their
-confirmed conference list. How is that implemented in the model function
-without creating separate priors per conference for game-level features?
+**Question 3:** `int.int_game_model_features` was written by
+`model_03_feature_engineering.ipynb` with all null handling and threshold-zeroing
+already applied. What null handling must NOT be repeated in Day 23? What does
+Day 23 still need to build that is not in the feature table (index arrays,
+conference masks, GameData)?
 
 ---
+
+## Day 22 — What Was Completed
+- Confirmation gate answered correctly before any code was attempted
+- Discovered that several features from final_features.csv were never persisted
+  to the database after EDA — computed in-memory only in EDA 06, 09, 10
+- Decision made: dedicate a full notebook to feature engineering before first fit
+- model_03_first_fit.ipynb renamed to model_04_first_fit.ipynb; all subsequent
+  notebooks shift down one day
+- model_03_feature_engineering.ipynb built and completed — 10 cells:
+  - Cell 1: imports, environment verification, DB connection
+    (scikit-learn installed via conda into cfb_model_arm)
+  - Cell 2: valid FBS game pool temp table (1,607 games, seasons 2022–2024)
+  - Cell 3: close_game_play_count_delta from existing int_game_team_features cols
+  - Cell 4: wind_chill (NWS formula) + environmental cols from int_game_environment;
+    expanded to two team rows per game
+  - Cell 5: rush/sack rate deltas from raw.plays aggregation (1.73s); home minus away
+  - Cell 6: KMeans archetypes (offense k=4, defense k=4, random_state=42);
+    integer-encoded; label maps and encodings saved to artifacts/
+  - Cell 7: full assembly — base features + 4 merge sets + elo_sp_divergence +
+    Approach A imputation + threshold-zeroing; 3,214 rows × 34 columns, zero nulls
+  - Cell 8: write to int.int_game_model_features (DROP/CREATE/INSERT, 3,214 rows)
+  - Cell 9: full validation — all checks passed
+  - Cell 10: markdown summary
+- Key facts confirmed:
+  - 1,607 FBS conference games, 131 unique teams, seasons 2022–2024
+  - mean points_scored = 26.9 (matches FBS baseline)
+  - is_home derived from raw.games join (not in int_game_team_features)
+  - close_game_epa_per_play / close_game_def_epa_per_play: 6 nulls each —
+    treated as zero (no close-game situations occurred in those games)
+
+## Day 21 — What Was Completed
+- Confirmation gate answered correctly before any code was attempted
+- model_02_architecture.ipynb completed — 7 cells:
+  - Cell 1: imports and environment verification
+  - Cell 2: conference index maps (inherited from Day 20 Cell 3)
+  - Cell 3: conference-scope mask builder and smoke test
+  - Cell 4: GameData dataclass (data container for model_cfb())
+  - Cell 5: model_cfb() — full hierarchical NegBinom model function
+  - Cell 6: structural verification — prior predictive draw, 38 parameters,
+    all assertions passed, Sun Belt constraint confirmed
+  - Cell 7: markdown summary
+- Log-scale corrections identified and applied to both notebooks:
+  - mu_league: Normal(27.0, 5.0) → Normal(3.3, 0.2) [exp(3.3) ≈ 27 pts]
+  - hfa_league: Normal(2.5, 1.5) → Normal(0.1, 0.05) [≈ 2.5 pts on 27 pt baseline]
+  - sigma_hfa_team: HalfNormal(2.0) → HalfNormal(0.1) [log scale]
+- model_01_prior_specification.ipynb Cells 2, 4, and 6 updated to match
+- Day 20 Cell 6 re-verified after corrections: 36 parameters, Sun Belt = -0.3398
 
 ## Day 20 — What Was Completed
 - Confirmation gate answered correctly before any code was attempted
@@ -50,26 +98,27 @@ without creating separate priors per conference for game-level features?
 
 ---
 
-## Model Build Phase — Days 20–33
+## Model Build Phase — Days 20–34
 
 | Day | Notebook | Status | Goal |
 |---|---|---|---|
 | 20 | model_01_prior_specification.ipynb | ✅ complete | Translate every entry in prior_specification_draft.md into NumPyro prior distributions. No fitting. Every numpyro.sample() call cites its EDA justification. |
-| 21 | model_02_architecture.ipynb | ❌ not built | Write hierarchical NegBinom model structure in NumPyro. No fitting. Three levels: league → conference → team. Document every design decision. |
-| 22 | model_03_first_fit.ipynb | ❌ not built | Fit on 2022–2024 training data. Do not touch 2025 holdout. Record fit time, divergences, initial parameter estimates. |
-| 23 | model_04_prior_predictive_checks.ipynb | ❌ not built | Sample before seeing data. Does it produce plausible CFB scores? Fix priors if it generates 0-point or 150-point games. |
-| 24 | model_05_posterior_checks.ipynb | ❌ not built | R-hat < 1.01, trace plots, energy plots, ESS. Confirm convergence. Investigate divergences. |
-| 25 | model_06_holdout_evaluation.ipynb | ❌ not built | First look at 2025 holdout. Overall Brier score, calibration curve. Baseline before subgroup breakouts. |
-| 26 | model_07_evaluation_by_conference_tier.ipynb | ❌ not built | Brier score and calibration by P4, G5, Independents. |
-| 27 | model_08_evaluation_by_game_type.ipynb | ❌ not built | Rivalry games, cross-tier matchups, neutral site games. Quantify how model handles upsets. |
-| 28 | model_09_evaluation_season_progression.ipynb | ❌ not built | Does calibration improve as season progresses? Conf game 1 vs conf game 8. |
-| 29 | model_10_home_away_spread_accuracy.ipynb | ❌ not built | Home field advantage calibration. Spread accuracy by expected margin. |
-| 30 | model_11_year_over_year_stability.ipynb | ❌ not built | Do 2023 model ratings predict 2024 performance? |
-| 31 | model_12_refinement.ipynb | ❌ not built | Adjust based on evaluation findings. May require revisiting priors, hierarchy, or dropping features. |
-| 32 | model_13_stress_testing.ipynb | ❌ not built | Edge cases: extreme weather, maximum travel, large timezone deltas, thin-data teams. |
-| 33 | model_14_signoff.ipynb | ❌ not built | Work through evaluation_checklist.md item by item. Model not signed off until every item addressed. |
+| 21 | model_02_architecture.ipynb | ✅ complete | Write hierarchical NegBinom model structure in NumPyro. No fitting. Three levels: league → conference → team. Document every design decision. |
+| 22 | model_03_feature_engineering.ipynb | ✅ complete | Engineer all features not persisted after EDA. Write to int.int_game_model_features. All null handling and threshold-zeroing applied here. |
+| 23 | model_04_first_fit.ipynb | ❌ not built | Fit on 2022–2024 training data. Do not touch 2025 holdout. Record fit time, divergences, initial parameter estimates. |
+| 24 | model_05_prior_predictive_checks.ipynb | ❌ not built | Sample before seeing data. Does it produce plausible CFB scores? Fix priors if it generates 0-point or 150-point games. |
+| 25 | model_06_posterior_checks.ipynb | ❌ not built | R-hat < 1.01, trace plots, energy plots, ESS. Confirm convergence. Investigate divergences. |
+| 26 | model_07_holdout_evaluation.ipynb | ❌ not built | First look at 2025 holdout. Overall Brier score, calibration curve. Baseline before subgroup breakouts. |
+| 27 | model_08_evaluation_by_conference_tier.ipynb | ❌ not built | Brier score and calibration by P4, G5, Independents. |
+| 28 | model_09_evaluation_by_game_type.ipynb | ❌ not built | Rivalry games, cross-tier matchups, neutral site games. Quantify how model handles upsets. |
+| 29 | model_10_evaluation_season_progression.ipynb | ❌ not built | Does calibration improve as season progresses? Conf game 1 vs conf game 8. |
+| 30 | model_11_home_away_spread_accuracy.ipynb | ❌ not built | Home field advantage calibration. Spread accuracy by expected margin. |
+| 31 | model_12_year_over_year_stability.ipynb | ❌ not built | Do 2023 model ratings predict 2024 performance? |
+| 32 | model_13_refinement.ipynb | ❌ not built | Adjust based on evaluation findings. May require revisiting priors, hierarchy, or dropping features. |
+| 33 | model_14_stress_testing.ipynb | ❌ not built | Edge cases: extreme weather, maximum travel, large timezone deltas, thin-data teams. |
+| 34 | model_15_signoff.ipynb | ❌ not built | Work through evaluation_checklist.md item by item. Model not signed off until every item addressed. |
 
-Gold layer begins Day 34.
+Gold layer begins Day 35.
 
 ---
 
@@ -96,8 +145,8 @@ Prior specifications: artifacts/prior_specification_draft.md
 ### Anchors (3)
 | Feature | Role | Spread | O/U | ML Var | Conference Scope | Threshold | Null Handling |
 |---|---|---|---|---|---|---|---|
-| close_game_epa_per_play | anchor | yes | yes | no | all | none | not_applicable |
-| close_game_def_epa_per_play | anchor | yes | yes | no | all | none | not_applicable |
+| close_game_epa_per_play | anchor | yes | yes | no | all | none | zero if null |
+| close_game_def_epa_per_play | anchor | yes | yes | no | all | none | zero if null |
 | away_elevation_delta_ft | anchor | yes | no | no | Mountain West, Big 12 | >=2000ft | zero |
 
 ### Prior Seeds (2) — team level, not game-level predictors
@@ -146,17 +195,16 @@ production launch. If no pregame version clears signal tests, drop these two fea
 
 ## Prior Specification Summary
 Full specification in artifacts/prior_specification_draft.md.
-Day 20 translates this into NumPyro code. Summary of distributions:
 
 | Parameter | Distribution | Mean | SD | Type |
 |---|---|---|---|---|
-| mu_league (intercept) | Normal | 27.0 | 5.0 | Weakly informative |
-| hfa_league | Normal | 2.5 | 1.5 | Informative |
+| mu_league (intercept) | Normal | 3.3 | 0.2 | Weakly informative (log scale) |
+| hfa_league | Normal | 0.1 | 0.05 | Informative (log scale) |
 | r_negbinom | HalfNormal | — | 5.0 | Weakly informative |
 | mu_conference[c] | Normal (hyperprior) | 0.0 | HalfNormal(3.0) | Weakly informative |
 | alpha_team[t] (attack) | Normal (hyperprior) | 0.0 | HalfNormal(0.4) | Weakly informative |
 | delta_team[t] (defense) | Normal (hyperprior) | 0.0 | HalfNormal(0.4) | Weakly informative |
-| hfa_team[t] | Normal (hyperprior) | 0.0 | HalfNormal(2.0) | Weakly informative |
+| hfa_team[t] | Normal (hyperprior) | 0.0 | HalfNormal(0.1) | Weakly informative (log scale) |
 | sp_weight | Normal | 0.0 | 1.0 | Informative |
 | rec_weight[c] | Normal | 0.0 | 0.5 | Informative |
 | rec_weight[Sun Belt] | TruncatedNormal(upper=0) | 0.0 | 0.5 | Hard constraint |
@@ -173,7 +221,7 @@ Implementation: numpyro.sample with TruncatedNormal(high=0).
 
 ---
 
-## Evaluation Thresholds (from evaluation_checklist.md — Day 33 reference)
+## Evaluation Thresholds (from evaluation_checklist.md — Day 34 reference)
 - R-hat < 1.01 for all parameters
 - ESS_bulk >= 400 and ESS_tail >= 400 for all parameters
 - Zero divergences post-warmup
@@ -221,6 +269,21 @@ Full 39-item checklist: artifacts/evaluation_checklist.md
 - Conference assignment: historically accurate by season from game records
 - 2025 is holdout — excluded from all training queries; season IN (2022, 2023, 2024)
 - Training data: 2022–2024 only
+- mu_league: Normal(3.3, 0.2) — log scale; exp(3.3) ≈ 27 pts (corrected from Normal(27.0, 5.0))
+- hfa_league: Normal(0.1, 0.05) — log scale; ≈ 2.5 pts on 27 pt baseline (corrected from Normal(2.5, 1.5))
+- sigma_hfa_team: HalfNormal(0.1) — log scale (corrected from HalfNormal(2.0))
+- model_cfb() accepts GameData dataclass; N_teams passed at call time from training data
+- Conference-scope masking: build_conf_mask() builds binary float32 mask before model_cfb() is called; one coefficient per scoped feature; masking handles zeroing — no separate priors per conference
+- close_game_epa_per_play / close_game_def_epa_per_play: null means no close-game
+  situations occurred — treated as zero; applied in model_03_feature_engineering.ipynb
+- Archetype KMeans: refit on every run of model_03_feature_engineering.ipynb
+  (offense k=4, defense k=4, random_state=42); encoded as integers before DB write;
+  label maps in artifacts/archetype_label_maps.json;
+  encodings in artifacts/archetype_matchup_encodings.json
+- All null handling and threshold-zeroing for model features is applied in
+  model_03_feature_engineering.ipynb — do not repeat in downstream notebooks
+- scikit-learn installed in cfb_model_arm via:
+  ~/miniforge3/bin/conda install -n cfb_model_arm scikit-learn -y
 
 ---
 
@@ -229,8 +292,11 @@ Full 39-item checklist: artifacts/evaluation_checklist.md
 - total_points: derive as points_scored + points_allowed
 - conference does NOT exist in int_game_team_features — join to
   int_team_season_features on team_name and season
+- is_home does NOT exist in int_game_team_features — derive as
+  CASE WHEN f.team_name = g.home_team THEN 1 ELSE 0 END via join to raw.games
+  on game_id and season
 - int_game_environment has home_team and away_team, not team_name — join on
-  game_id only, then filter f.team_name IN (e.home_team, e.away_team)
+  game_id only, then expand to two team rows
 - All numeric columns from psycopg2 return as Decimal — cast entire numeric
   column list to float64 immediately
 - Boolean columns (is_dome, is_high_wind, is_precipitation) — use
@@ -240,7 +306,10 @@ Full 39-item checklist: artifacts/evaluation_checklist.md
   int_game_team_features
 - game_script, game_script_avg_margin exist in int_game_team_features
 - close_game_play_count, close_game_def_play_count exist in int_game_team_features
+- int_game_team_features granularity: two rows per game (one per team)
 - sp_rating and conference: authoritative source is int_team_season_features
+- raw.games opponent column in int_game_team_features is named 'opponent' (not
+  'opponent_name')
 - raw.plays scrimmage play types for rush: 'Rush', 'Rushing Touchdown'
 - raw.plays scrimmage play types for pass: 'Pass Reception', 'Pass Incompletion',
   'Passing Touchdown', 'Sack', 'Pass Completion', 'Pass Interception Return'
@@ -294,8 +363,12 @@ def assign_tier(row):
 - int.int_team_season_context — season-level team context
 - int.int_team_season_features — season-level features; authoritative source
   for conference and sp_rating
+- int.int_game_model_features — one row per team per game; all engineered model
+  features for seasons 2022–2024; rebuilt by running
+  model_03_feature_engineering.ipynb; primary key (game_id, team_name)
 - stg.stg_game_weather — kickoff_hour (not yet promoted to int layer)
-- raw.games — home/away points, teams, conference_game flag, ELO fields
+- raw.games — home/away points, teams, conference_game flag, ELO fields;
+  authoritative source for is_home
 - raw.plays — play-level table for in-game derived features
 - raw.odds — 2026 season only; live validation target only
 
@@ -324,6 +397,9 @@ def assign_tier(row):
     AND season IN (2022, 2023, 2024). 2025 is holdout.
 13. Never call numpyro.infer.MCMC.run() in Day 20 — prior specification only
 14. Every prior in Day 20 must cite its entry in prior_specification_draft.md
+15. If a required file is not available (notebook, artifact, schema output,
+    or any local project file), stop and ask the user to provide it — do not
+    attempt to reconstruct it from memory or build a generic version.
 
 ---
 
@@ -344,9 +420,11 @@ appears with any row count, stop and fix before proceeding.
 | artifacts/final_features.csv | 23 included features with complete prior specs — authoritative feature list for model build |
 | artifacts/master_verdict.csv | 93 rows — full EDA verdict record |
 | artifacts/prior_specification_draft.md | Day 20 input — translate into NumPyro code |
-| artifacts/evaluation_checklist.md | 39-item pass/fail checklist — Day 33 works through this |
+| artifacts/evaluation_checklist.md | 39-item pass/fail checklist — Day 34 works through this |
 | artifacts/ambiguity_resolution.md | 5 binding ambiguity decisions |
 | artifacts/candidate_features.csv | 185 keep=True features — reference only |
+| artifacts/archetype_label_maps.json | KMeans archetype label maps (offense k=4, defense k=4) — written by model_03_feature_engineering.ipynb |
+| artifacts/archetype_matchup_encodings.json | Integer encodings for all 4 archetype matchup columns — written by model_03_feature_engineering.ipynb |
 
 ---
 
