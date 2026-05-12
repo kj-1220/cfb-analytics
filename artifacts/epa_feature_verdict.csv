@@ -1,6 +1,6 @@
 feature,spread_partial_r,spread_signal,ou_partial_r,ou_signal,variance_signal_spread,variance_signal_ou,traj_spread_game1_r,traj_ou_game1_r,traj_spread_holds_game1,traj_ou_holds_game1,yoy_r,yoy_stable,is_prior_seed,verdict
-close_game_epa_per_play,0.654,True,0.4237,True,True,False,0.5988,0.4181,True,True,0.4331,False,False,"anchor candidate — game-level predictor, spread + O/U signal, holds at conf game 1"
-close_game_def_epa_per_play,-0.657,True,0.4473,True,False,False,-0.6134,0.4715,True,True,0.4224,False,False,"anchor candidate — game-level predictor, spread + O/U signal, holds at conf game 1"
-def_epa_per_play_allowed,-0.6512,True,0.4628,True,True,False,-0.5929,0.5034,True,True,0.4224,False,False,"redundant — collinear with close_game_def_epa_per_play (r=0.9775), zero residual signal"
-last3_off_epa_avg,0.2672,True,0.0643,False,False,False,0.3217,-0.0898,True,False,,False,False,"supporting — in-season only, not opponent-adjusted, no prior seed"
-last3_def_epa_avg,-0.2166,True,0.1078,True,False,False,-0.1722,0.217,True,True,,False,False,"supporting — in-season only, not opponent-adjusted, no prior seed"
+close_game_epa_per_play,0.6566,True,0.4292,True,True,False,0.6125,0.4315,True,True,0.4331,False,False,"anchor candidate — game-level predictor, spread + O/U signal, holds at conf game 1"
+close_game_def_epa_per_play,-0.6562,True,0.4489,True,False,False,-0.6339,0.4846,True,True,0.4224,False,False,"anchor candidate — game-level predictor, spread + O/U signal, holds at conf game 1"
+def_epa_per_play_allowed,-0.6505,True,0.4644,True,True,False,-0.5977,0.5223,True,True,0.4224,False,False,"redundant — collinear with close_game_def_epa_per_play (r=0.9775), zero residual signal"
+last3_off_epa_avg,0.2772,True,0.0681,False,False,False,0.3521,-0.0677,True,False,,False,False,"supporting — in-season only, not opponent-adjusted, no prior seed"
+last3_def_epa_avg,-0.2204,True,0.1084,True,False,False,-0.192,0.2246,True,True,,False,False,"supporting — in-season only, not opponent-adjusted, no prior seed"

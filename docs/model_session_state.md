@@ -3,6 +3,23 @@ project. Do not use any other kernel.
 
 ---
 
+## ⚠️ CRITICAL — How Notebooks Are Written In This Project
+This rule overrides everything else. Read it before doing anything.
+
+Notebooks are written cell by cell, directly in the conversation, as executable
+Python code blocks.
+- Each cell is written as a code block in the response
+- The user copies it into Jupyter manually and runs it
+- Output is verified before the next cell is written
+- NEVER use nbformat, papermill, or any script to generate notebook files
+- NEVER write a Python script that constructs a notebook object
+- NEVER use create_file to produce a .ipynb file
+- NEVER batch all cells into a single response — write one cell at a time
+- If a cell produces an error, rewrite the ENTIRE cell — never patch inline
+- Do not proceed to the next cell until the current one has been confirmed
+
+---
+
 ## ⚠️ CRITICAL — Confirmation Gate
 Rewritten each session to reflect what the next notebook must understand.
 
