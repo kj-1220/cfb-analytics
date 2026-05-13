@@ -1,35 +1,35 @@
 feature_name,source_day,spread_signal,spread_partial_r,spread_conferences,ou_signal,ou_partial_r,ou_conferences,moneyline_variance_signal,yoy_stability_r,yoy_verdict,role,ambiguity_flag,final_decision,decision_justification
-close_game_epa_per_play,8,yes,0.654,all,yes,0.4237,all,no,0.4331,not_applicable,anchor,no,include,"Anchor pair confirmed: spread r=0.5988 at conf game 1, trajectory holds, YoY r=0.4331."
-close_game_def_epa_per_play,8,yes,-0.657,all,yes,0.4473,all,no,0.4224,not_applicable,anchor,no,include,"Anchor pair confirmed: spread r=-0.6134 at conf game 1, trajectory holds, YoY r=0.4224."
-def_epa_per_play_allowed,8,yes,-0.6512,,yes,0.4628,all,no,0.4224,not_applicable,excluded,no,exclude,Redundant: collinear with close_game_def_epa_per_play (r=0.9775).
-last3_off_epa_avg,8,yes,0.2672,"ACC,Mid-American,SEC",no,0.0643,,no,,not_applicable,conference_specific,yes,include,"Conference-specific spread signal in ACC, Mid-American, SEC; null at conf game 1."
-last3_def_epa_avg,8,yes,-0.2166,"American Athletic,Big Ten,Conference USA,Mid-American,Pac-12,Sun Belt",yes,0.1078,all,no,,not_applicable,conference_specific,yes,include,"Conference-specific spread signal in American Athletic, Big Ten, Conference USA, Mid-American, Pac-12, Sun Belt; null at conf game 1."
+close_game_epa_per_play,8,yes,0.6566,all,yes,0.4292,all,no,0.4331,not_applicable,anchor,no,include,"Anchor pair confirmed: spread r=0.5988 at conf game 1, trajectory holds, YoY r=0.4331."
+close_game_def_epa_per_play,8,yes,-0.6562,all,yes,0.4489,all,no,0.4224,not_applicable,anchor,no,include,"Anchor pair confirmed: spread r=-0.6134 at conf game 1, trajectory holds, YoY r=0.4224."
+def_epa_per_play_allowed,8,yes,-0.6505,,yes,0.4644,all,no,0.4224,not_applicable,excluded,no,exclude,Redundant: collinear with close_game_def_epa_per_play (r=0.9775).
+last3_off_epa_avg,8,yes,0.2772,"ACC,Mid-American,SEC",no,0.0681,,no,,not_applicable,conference_specific,yes,include,"Conference-specific spread signal in ACC, Mid-American, SEC; null at conf game 1."
+last3_def_epa_avg,8,yes,-0.2204,"American Athletic,Big Ten,Conference USA,Mid-American,Pac-12,Sun Belt",yes,0.1084,all,no,,not_applicable,conference_specific,yes,include,"Conference-specific spread signal in American Athletic, Big Ten, Conference USA, Mid-American, Pac-12, Sun Belt; null at conf game 1."
 sp_rating,9,no,,,no,,,no,0.774,stable,prior_seed,no,include,SP+ prior seed: YoY r=0.7740; prior remains relevant through games 9-12; do not aggressively down-weight.
 sp_offense,9,no,,,no,,,no,0.606,not_applicable,excluded,no,exclude,Less stable than sp_rating (YoY r=0.6060); use sp_rating as anchor only.
 sp_defense,9,no,,,no,,,no,0.6725,not_applicable,excluded,no,exclude,Less stable than sp_rating (YoY r=0.6725); use sp_rating as anchor only.
 recruiting_3yr_avg,9,no,,,no,,,no,0.9779,stable,prior_seed,no,include,Extremely stable prior seed (YoY r=0.9779); moderate weight in Big Ten and SEC; negative direction in Sun Belt.
 opp_sp_rating_at_game_time,9,no,,,no,,,no,,not_applicable,excluded,no,exclude,Control variable only; not a model feature or prior seed.
-away_elevation_delta_ft,11,yes,0.1518,"Mountain West,Big 12",no,,,no,0.8255,stable,anchor,no,include,"Threshold-activated anchor (>=2000ft): spread r=0.1518, YoY r=0.8255; signal concentrates in Mountain West and Big 12."
-venue_elevation_ft,11,no,,,no,,,no,0.6793,unstable,excluded,no,exclude,Redundant: no threshold cleared; use away_elevation_delta_ft instead.
-away_travel_distance_mi,11,yes,0.2011,all,no,,,no,0.6562,unstable,supporting,no,include,"Threshold-activated supporting (>=1500mi): spread r=0.2011, YoY r=0.6562; spread signal only."
+away_elevation_delta_ft,11,yes,0.1518,"Mountain West,Big 12",no,,,no,0.8258,stable,anchor,no,include,"Threshold-activated anchor (>=2000ft): spread r=0.1518, YoY r=0.8255; signal concentrates in Mountain West and Big 12."
+venue_elevation_ft,11,no,,,no,,,no,0.6794,unstable,excluded,no,exclude,Redundant: no threshold cleared; use away_elevation_delta_ft instead.
+away_travel_distance_mi,11,yes,0.2011,all,no,,,no,0.6565,unstable,supporting,no,include,"Threshold-activated supporting (>=1500mi): spread r=0.2011, YoY r=0.6562; spread signal only."
 away_tz_delta_hrs,11,yes,-0.2669,all,no,,,no,0.671,unstable,supporting,no,include,"Threshold-activated supporting (abs>=2hr): spread r=-0.2669, YoY r=0.6710; spread signal only."
 wind_speed_mph,11,no,,,no,,,no,,not_applicable,excluded,no,exclude,Redundant: no signal after EPA control at any threshold; absorbed by EPA anchor pair.
 wind_gusts_mph,11,no,,,no,,,no,,not_applicable,excluded,no,exclude,Redundant: no signal after EPA control at any threshold.
 is_high_wind,11,no,,,no,,,no,,not_applicable,excluded,no,exclude,Redundant: no signal after EPA control at any threshold.
-wind_chill,11,no,,,yes,0.1122,all,no,,not_applicable,supporting,no,include,"O/U signal only at <=40F (r=0.1122), strengthens at <=25F (r=0.3373); no spread signal."
+wind_chill,11,no,,,yes,0.1141,all,no,,not_applicable,supporting,no,include,"O/U signal only at <=40F (r=0.1122), strengthens at <=25F (r=0.3373); no spread signal."
 temperature_f,11,no,,,no,,,no,,not_applicable,excluded,no,exclude,Largely absorbed by wind_chill composite; redundant.
 humidity_pct,11,no,,,no,,,no,,not_applicable,excluded,no,exclude,No signal in triggered population on clean 2022-2024 data.
 heat_index,11,no,,,no,,,no,,not_applicable,excluded,no,exclude,O/U signal absent in triggered population on clean 2022-2024 data.
 precipitation_inches,11,no,,,no,,,no,,not_applicable,excluded,no,exclude,Insufficient sample (n=44); do not model.
 is_precipitation,11,no,,,no,,,no,,not_applicable,excluded,no,exclude,Insufficient sample (n=44); do not model.
 is_dome,11,no,,,no,,,no,,not_applicable,excluded,no,exclude,Redundant: dome override zeroes weather correctly; no residual signal after env controls.
-last3_points_scored_avg,12,no,0.0918,"ACC,Big 12,Big Ten,Conference USA,Mid-American,Mountain West",no,0.0689,,no,,unstable,conference_specific,no,include,Conference-specific supporting; signal holds from conf game 2 in 6 conferences.
-last3_points_allowed_avg,12,yes,-0.1181,"American Athletic,Big Ten,Conference USA,Mountain West,Pac-12,Sun Belt",no,0.0999,,no,,unstable,conference_specific,no,include,Conference-specific supporting; signal holds from conf game 2 in 6 conferences.
-last3_win_pct,12,yes,0.127,all,no,-0.0135,,no,,unstable,supporting,no,include,Broad supporting spread signal from conf game 2 across conferences.
-days_since_last_game,12,no,0.0257,"American Athletic,Big 12",no,0.018,,no,,unstable,conference_specific,no,include,Bye week signal (>=12d) in American Athletic and Big 12 only; redundant elsewhere.
-pregame_elo,13,yes,0.1702,all,no,-0.0448,,no,0.8452,stable,supporting,no,include,"Game-level spread predictor: r=0.1702 full population, holds at conf game 1 (r=0.1870); YoY r=0.8452."
-elo_sp_divergence,13,yes,0.165,all,no,-0.0449,,no,,unstable,supporting,yes,include,"Spread r=0.1650 after SP+ controlled; compute in notebook first, add to dbt after model confirms value. (Ambiguity 5 resolved: include.)"
-prior_avg_excitement_index,13,no,-0.0282,,no,0.0423,,no,0.1877,unstable,excluded,no,exclude,YoY r=0.1877 — extremely unstable; late-season O/U signal does not hold earlier; unusable as prior seed.
+last3_points_scored_avg,12,no,0.0888,"ACC,Big 12,Big Ten,Conference USA,Mid-American,Mountain West",no,0.0696,,no,,unstable,conference_specific,no,include,Conference-specific supporting; signal holds from conf game 2 in 6 conferences.
+last3_points_allowed_avg,12,yes,-0.1149,"American Athletic,Big Ten,Conference USA,Mountain West,Pac-12,Sun Belt",no,0.0995,,no,,unstable,conference_specific,no,include,Conference-specific supporting; signal holds from conf game 2 in 6 conferences.
+last3_win_pct,12,yes,0.1249,all,no,-0.0127,,no,,unstable,supporting,no,include,Broad supporting spread signal from conf game 2 across conferences.
+days_since_last_game,12,no,0.0205,"American Athletic,Big 12",no,0.0143,,no,,unstable,conference_specific,no,include,Bye week signal (>=12d) in American Athletic and Big 12 only; redundant elsewhere.
+pregame_elo,13,yes,0.1664,all,no,-0.0473,,no,0.8423,stable,supporting,no,include,"Game-level spread predictor: r=0.1702 full population, holds at conf game 1 (r=0.1870); YoY r=0.8452."
+elo_sp_divergence,13,yes,-0.115,all,no,-0.0282,,no,,unstable,supporting,yes,include,"Spread r=0.1650 after SP+ controlled; compute in notebook first, add to dbt after model confirms value. (Ambiguity 5 resolved: include.)"
+prior_avg_excitement_index,13,no,-0.0284,,no,0.0473,,no,0.1888,unstable,excluded,no,exclude,YoY r=0.1877 — extremely unstable; late-season O/U signal does not hold earlier; unusable as prior seed.
 success_rate_overall,14,no,,,no,,,no,,not_applicable,supporting,no,exclude,No EDA signal test run; excluded pending model-phase evaluation.
 success_rate_rush,14,no,,,no,,,no,,not_applicable,supporting,no,exclude,No EDA signal test run; excluded pending model-phase evaluation.
 success_rate_pass,14,no,,,no,,,no,,not_applicable,supporting,no,exclude,No EDA signal test run; excluded pending model-phase evaluation.

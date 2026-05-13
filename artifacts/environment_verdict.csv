@@ -1,16 +1,16 @@
 feature,population,spread_partial_r,spread_signal,ou_partial_r,ou_signal,yoy_r,yoy_stable,is_weather,verdict,notes
-away_elevation_delta_ft,"Away team, delta >= 2000 ft",0.1518,True,-0.1338,True,0.8255,True,False,"anchor candidate — structural, signal + stable YoY",Signal concentrates at delta>=2000ft. Best threshold: >=3000ft r=0.136.
-venue_elevation_ft,"Away team, full population",-0.0301,False,-0.0099,False,0.6793,False,False,redundant,No threshold cleared. away_elevation_delta_ft preferred.
-away_travel_distance_mi,"Away team, travel >= 1500 mi",0.2011,True,-0.1142,True,0.6562,False,False,"supporting — signal present, YoY below anchor threshold",Spread signal at >=1500mi. Also present in max-stress pop (>500mi + abs(tz)>=2).
-away_tz_delta_hrs,"Away team, abs(tz_delta) >= 2 hrs",-0.2669,True,-0.0874,False,0.671,False,False,"supporting — signal present, YoY below anchor threshold","Spread signal only. Strengthens at abs>=3hr (r=-0.258, n=71). No O/U signal."
+away_elevation_delta_ft,"Away team, delta >= 2000 ft",0.1518,True,-0.1338,True,0.8258,True,False,"anchor candidate — structural, signal + stable YoY",Signal concentrates at delta>=2000ft. Best threshold: >=3000ft r=0.136.
+venue_elevation_ft,"Away team, full population",-0.0298,False,-0.0093,False,0.6794,False,False,redundant,No threshold cleared. away_elevation_delta_ft preferred.
+away_travel_distance_mi,"Away team, travel >= 1500 mi",0.2011,True,-0.1142,True,0.6565,False,False,"supporting — signal present, YoY below anchor threshold",Spread signal at >=1500mi. Also present in max-stress pop (>500mi + abs(tz)>=2).
+away_tz_delta_hrs,"Away team, abs(tz_delta) >= 2 hrs",-0.2669,True,-0.0874,False,0.671,False,False,"supporting — signal present, YoY below anchor threshold","Spread signal only. Strengthens at abs>=3hr (r=-0.310, n=38). No O/U signal."
 kickoff_hour × away_tz_delta_hrs,"Large tz loss + early kickoff (tz>=2, kickoff<=12 ET)",,False,,False,,False,False,insufficient sample — do not model (n=15 in target population),Large tz loss (>=2hr) + early kickoff (<=12 ET) yields only 15 conference games. Theoretically sound but cannot be demonstrated empirically. Timezone signal at abs>=2hr (n=149) already captures bulk of the effect.
-wind_speed_mph,Non-dome games,0.0003,False,0.0012,False,,False,True,redundant,No signal after EPA control at any threshold. Absorbed by EPA anchor pair.
-wind_gusts_mph,Non-dome games,0.0002,False,0.0117,False,,False,True,redundant,No signal after EPA control at any threshold. Absorbed by EPA anchor pair.
-is_high_wind,Non-dome games,-0.0023,False,0.0278,False,,False,True,redundant,No signal after EPA control at any threshold. Absorbed by EPA anchor pair.
-wind_chill,"WC triggered, wind_chill <= 40°F",0.0048,False,0.1122,True,,False,True,supporting — O/U signal only,"O/U signal at <=40°F (n=397). Strengthens at <=25°F (r=0.235, n=99). No spread signal."
-temperature_f,"Non-dome, temp <= 40°F",0.0044,False,0.1339,True,,False,True,supporting — O/U signal only,O/U signal at <=40°F (n=285). Largely absorbed by wind_chill composite.
-humidity_pct,"HI triggered pop (temp>80, humidity>40)",-0.0,False,-0.0257,False,,False,True,redundant,O/U signal only within HI triggered population. Absorbed by heat_index composite — prefer heat_index.
-heat_index,"HI triggered pop (temp>80, humidity>40)",0.0,False,-0.0788,False,,False,True,redundant,"O/U signal in triggered pop (r=-0.121, n=300). Strengthens at >=90°F (r=-0.255, n=40). No spread signal."
-precipitation_inches,Non-dome games (n=66 precip games),0.0003,False,0.011,False,,False,True,insufficient sample — do not model (n=66 precipitation games),n=66 precipitation games in conference play. Below 200 threshold.
-is_precipitation,Non-dome games (n=66 precip games),-0.0001,False,0.0153,False,,False,True,insufficient sample — do not model (n=66 precipitation games),n=66 precipitation games in conference play. Below 200 threshold.
+wind_speed_mph,Non-dome games,0.0,False,0.0009,False,,False,True,redundant,No signal after EPA control at any threshold. Absorbed by EPA anchor pair.
+wind_gusts_mph,Non-dome games,-0.0,False,0.0114,False,,False,True,redundant,No signal after EPA control at any threshold. Absorbed by EPA anchor pair.
+is_high_wind,Non-dome games,0.0,False,0.028,False,,False,True,redundant,No signal after EPA control at any threshold. Absorbed by EPA anchor pair.
+wind_chill,"WC triggered, wind_chill <= 40°F",0.0,False,0.1141,True,,False,True,supporting — O/U signal only,"O/U signal at <=40°F (n=314). Strengthens at <=25°F (r=0.3424, n=70). No spread signal."
+temperature_f,"Non-dome, temp <= 40°F",-0.0,False,0.1355,True,,False,True,supporting — O/U signal only,O/U signal at <=40°F. Largely absorbed by wind_chill composite.
+humidity_pct,"HI triggered pop (temp>80, humidity>40)",0.0,False,-0.0257,False,,False,True,redundant,"No signal in HI triggered population (r=-0.0257, n=214). Absorbed by heat_index composite."
+heat_index,"HI triggered pop (temp>80, humidity>40)",0.0,False,-0.0788,False,,False,True,redundant,"No signal in HI triggered population (r=-0.0788, n=214). >=90°F threshold returned nan (n=28). Redundant."
+precipitation_inches,Non-dome games (n=44 precip games),-0.0,False,0.0116,False,,False,True,insufficient sample — do not model (n=44 precipitation games),n=44 precipitation games in conference play. Below 200 threshold.
+is_precipitation,Non-dome games (n=44 precip games),0.0,False,0.0159,False,,False,True,insufficient sample — do not model (n=44 precipitation games),n=44 precipitation games in conference play. Below 200 threshold.
 is_dome,All conference games,,False,,False,,False,False,redundant — override zeroes weather; no residual signal after env controls,Dome residual SD not significantly different from non-dome (Levene p=0.549).
