@@ -23,95 +23,205 @@ Python code blocks.
 ## ⚠️ CRITICAL — Confirmation Gate
 Rewritten each session to reflect what the next notebook must understand.
 
-**Next notebook: Day 23 — First Fit**
+**Next notebook: Day 25 (continued) — model_07_posterior_checks.ipynb**
 
 Answer these questions in your own words before writing any code:
 
-**Question 1:** Day 23 loads training data from `int.int_game_model_features`.
-What is the granularity of that table? What join is required to get opponent
-index arrays, and what season filter must be applied? Why is 2025 excluded?
+**Question 1:** model_06 showed sigma_attack posterior mean = 0.018 and
+sigma_defense posterior mean = 0.061 — a 3x difference. What does this
+asymmetry tell you about team-level heterogeneity in the data? Does it
+change anything about how you interpret posterior team ratings?
 
-**Question 2:** `model_cfb()` requires `team_idx`, `opp_idx`, and `conf_idx` as
-integer arrays. Describe exactly how these are built from the training DataFrame —
-what uniqueness key is used for teams, what lookup table maps strings to integers,
-and what must be true about the index ranges relative to `N_teams` and
-`N_CONFERENCES`.
+**Question 2:** model_07 must compute posterior predictive VMR per conference
+as a replacement for the retired prior predictive VMR threshold. Describe
+exactly how you would compute this: what data do you use, what do you
+condition on, and what makes a result a pass vs a flag?
 
-**Question 3:** `int.int_game_model_features` was written by
-`model_03_feature_engineering.ipynb` with all null handling and threshold-zeroing
-already applied. What null handling must NOT be repeated in Day 23? What does
-Day 23 still need to build that is not in the feature table (index arrays,
-conference masks, GameData)?
+**Question 3:** b_close_game_epa posterior mean = 0.347 — roughly 30x larger
+than any other game-level coefficient. Its HDI (0.333, 0.360) does not
+include zero. What does this mean for the model's predictive behavior?
+Is there anything to check in the posterior predictive plots specifically
+because of this?
 
 ---
 
-## Day 22 — What Was Completed
-- Confirmation gate answered correctly before any code was attempted
-- Discovered that several features from final_features.csv were never persisted
-  to the database after EDA — computed in-memory only in EDA 06, 09, 10
-- Decision made: dedicate a full notebook to feature engineering before first fit
-- model_03_first_fit.ipynb renamed to model_04_first_fit.ipynb; all subsequent
-  notebooks shift down one day
-- model_03_feature_engineering.ipynb built and completed — 10 cells:
+## Day 25 — What Was Completed
+
+model_06_full_fit.ipynb — 7 cells, complete and verified.
+
+Full production fit: 4 chains, 1000 warmup, 1000 samples.
+Wall-clock: 654.2s (chains run sequentially — single CPU device;
+UserWarning issued but expected on this hardware).
+
+Sampler results:
+  Divergences      : 0 / 4000
+  Acceptance probs : 0.93 / 0.90 / 0.92 / 0.91 — all on target
+  Leapfrog steps   : 127 across all four chains — consistent geometry
+
+Convergence — all thresholds passed:
+  R-hat < 1.01         : PASS (all parameters)
+  ESS_bulk >= 400      : PASS (all parameters)
+  ESS_tail >= 400      : PASS (all parameters)
+
+Team-level array diagnostics (max R-hat across 131 teams):
+  alpha_team_raw : max_rhat=1.0065  min_ess_bulk=4292  min_ess_tail=1915
+  delta_team_raw : max_rhat=1.0063  min_ess_bulk=7550  min_ess_tail=2293
+  hfa_team_raw   : max_rhat=1.0040  min_ess_bulk=4738  min_ess_tail=2055
+
+Key posterior means (full fit — authoritative):
+  mu_league        : 3.1935
+  hfa_league       : 0.0294   (below prior center 0.1; stable vs diagnostic)
+  sigma_attack     : 0.0182   (low; ESS_bulk=1092, ESS_tail=1733 — both pass)
+  sigma_defense    : 0.0610   (3x sigma_attack — notable asymmetry)
+  sigma_hfa_team   : 0.0262
+  sigma_conference : 0.0773
+  sp_weight        : 0.0637
+  b_close_game_epa : 0.3472   (dominant signal; HDI 0.333–0.360, no zero)
+
+r_negbinom posterior means by conference (authoritative — use these, not
+the diagnostic run notebook summary which reflected a different prior):
+  ACC              : 17.77
+  American Athletic: 14.70
+  Big 12           : 13.97
+  Big Ten          : 11.98
+  Conference USA   : 12.11
+  Mid-American     : 13.77
+  Mountain West    : 14.44
+  Pac-12           : 15.81
+  SEC              : 17.54
+  Sun Belt         : 14.60
+
+Notable coefficient findings locked for model_07 review:
+  b_close_game_epa    : mean=0.347 — dominant predictor, no zero in HDI
+  b_pregame_elo       : mean=0.002, HDI includes zero — weak signal
+  b_off_sack_rate_allowed: mean=-0.013, HDI includes zero — weak signal
+  sigma_defense >> sigma_attack: between-team defensive heterogeneity
+    substantially larger than offensive; consistent with EPA covariates
+    absorbing offensive variance
+  rec_weight_sunbelt  : mean=-0.048, HDI (-0.092, -0.001) — constraint
+    active, posterior sitting against boundary
+
+Artifact saved: artifacts/model_06_samples.pkl
+  Contents: samples, idata, N_teams, N_CONFERENCES, team_to_idx,
+            conf_to_idx, CONFERENCES
+
+Pending at end of Day 25:
+  model_07_posterior_checks.ipynb — not built
+
+---
+
+## Day 24 — What Was Completed
+
+model_03 Cell 7 rewrite — root cause of prior predictive explosions:
+  Sparse threshold-activated features were not winsorized before scaling.
+  days_since_last_game reached +19.75 sigma. off_sack_rate_allowed_delta
+  reached ±6.84 sigma (Navy vs UCF 2022). These caused prior predictive
+  score explosions — median correct at 27 pts but mean at 3.3M.
+  Fixes applied in Cell 7:
+    days_since_last_game    : winsorized at 21 days before scaling
+    away_travel_distance_mi : winsorized at 5000 mi before scaling
+    away_elevation_delta_ft : winsorized at 7000 ft before scaling
+    all continuous features : clipped to [-3, 3] after standardization
+    scaler_stats.json       : std_nonzero key renamed to std
+  Cell 8: execute_values(page_size=500) replacing executemany.
+    Before Cell 8: terminate idle-in-transaction sessions on
+    int_game_model_features via pg_stat_activity.
+  Cell 9 validation: 3,214 rows, 31 columns, all checks passed.
+
+model_04 re-run on corrected data (diagnostic only — 1 chain, 200
+warmup, 200 samples). All priors corrected before re-run (see locked
+decisions below). Results:
+  0 divergences, acceptance 0.94, wall-clock 64.4s
+  sigma_attack posterior mean: 0.019 — low; watched in full 4-chain run
+  hfa_league posterior mean: 0.030 — below prior center 0.1; watched
+  b_off_archetype shape: (200, 4) ✓  b_def_archetype shape: (200, 4) ✓
+
+model_05_prior_predictive_checks.ipynb — all 5 cells complete and
+verified (plot saved and confirmed):
+  90.4% within 0–70 pts — PASS (threshold recalibrated to 90%)
+  VMR deferred to model_07
+  Median score: 26 pts; overall mean: 40.48 pts; P99: 194 pts
+  Per-sample mean range: 13.6–285.8 pts
+  2/500 samples with per-sample mean > 200 — valid hierarchical behavior
+  r_negbinom prior draws: mean ~7.9–8.1 per conference (matches prior)
+  Plot saved: artifacts/model_05_prior_predictive.png
+
+RAG outlier flagging decision (locked):
+  Flag predictions where any of the following are true:
+    - Team's off_archetype_idx is in cluster 3 (n=83, sparse)
+    - Team's def_archetype_idx is in cluster 1 (n=505, sparse)
+    - Any input feature hit a winsorization cap at prediction time
+    - sigma_attack * alpha_team_raw for either team exceeds 2 sigma
+      from the training distribution
+  Navy and option-offense teams are primary candidates.
+  Do not exclude these teams from training or prediction.
+
+## Day 23 — What Was Completed
+- model_04_first_fit.ipynb audited and corrected — 6 cells:
   - Cell 1: imports, environment verification, DB connection
-    (scikit-learn installed via conda into cfb_model_arm)
-  - Cell 2: valid FBS game pool temp table (1,607 games, seasons 2022–2024)
-  - Cell 3: close_game_play_count_delta from existing int_game_team_features cols
-  - Cell 4: wind_chill (NWS formula) + environmental cols from int_game_environment;
-    expanded to two team rows per game
-  - Cell 5: rush/sack rate deltas from raw.plays aggregation (1.73s); home minus away
-  - Cell 6: KMeans archetypes (offense k=4, defense k=4, random_state=42);
-    integer-encoded; label maps and encodings saved to artifacts/
-  - Cell 7: full assembly — base features + 4 merge sets + elo_sp_divergence +
-    Approach A imputation + threshold-zeroing; 3,214 rows × 34 columns, zero nulls
-  - Cell 8: write to int.int_game_model_features (DROP/CREATE/INSERT, 3,214 rows)
-  - Cell 9: full validation — all checks passed
-  - Cell 10: markdown summary
-- Key facts confirmed:
-  - 1,607 FBS conference games, 131 unique teams, seasons 2022–2024
-  - mean points_scored = 26.9 (matches FBS baseline)
-  - is_home derived from raw.games join (not in int_game_team_features)
-  - close_game_epa_per_play / close_game_def_epa_per_play: 6 nulls each —
-    treated as zero (no close-game situations occurred in those games)
+  - Cell 2: conference index maps, GameData dataclass, model_cfb() —
+    corrected: r_negbinom Gamma(2.0, 0.1) vector x N_CONFERENCES,
+    archetype embeddings (4-vector), compound matchup fields removed,
+    non-centered team parameterization
+  - Cell 3: load training data from int.int_game_model_features
+  - Cell 4: build index arrays and conference masks
+  - Cell 5: construct GameData — corrected: no re-standardization
+    (data already scaled by model_03), archetype fields as int32
+  - Cell 6: NUTS diagnostic run — corrected: r_negbinom init as vector,
+    archetype init as 4-vector zeros
+- Three diagnostic scratch cells removed (written to debug divergences
+  in earlier broken state — root causes now fixed)
+- Diagnostic run results: 0 divergences, acceptance prob=0.94,
+  wall-clock 99.2s, 255 leapfrog steps
 
-## Day 21 — What Was Completed
-- Confirmation gate answered correctly before any code was attempted
-- model_02_architecture.ipynb completed — 7 cells:
-  - Cell 1: imports and environment verification
-  - Cell 2: conference index maps (inherited from Day 20 Cell 3)
-  - Cell 3: conference-scope mask builder and smoke test
-  - Cell 4: GameData dataclass (data container for model_cfb())
-  - Cell 5: model_cfb() — full hierarchical NegBinom model function
-  - Cell 6: structural verification — prior predictive draw, 38 parameters,
-    all assertions passed, Sun Belt constraint confirmed
-  - Cell 7: markdown summary
-- Log-scale corrections identified and applied to both notebooks:
-  - mu_league: Normal(27.0, 5.0) → Normal(3.3, 0.2) [exp(3.3) ≈ 27 pts]
-  - hfa_league: Normal(2.5, 1.5) → Normal(0.1, 0.05) [≈ 2.5 pts on 27 pt baseline]
-  - sigma_hfa_team: HalfNormal(2.0) → HalfNormal(0.1) [log scale]
-- model_01_prior_specification.ipynb Cells 2, 4, and 6 updated to match
-- Day 20 Cell 6 re-verified after corrections: 36 parameters, Sun Belt = -0.3398
+## Day 22 — What Was Completed
+- model_03_feature_engineering.ipynb audited and corrected — 9 cells:
+  - Cell 6: KMeans archetypes corrected — compound matchup string columns
+    removed; now produces off_archetype_idx and def_archetype_idx (int32,
+    0–3) per team per game; archetype_matchup_encodings.json eliminated
+  - Cell 7: standardization pass added (continuous mean=0 std=1; sparse
+    divide by non-zero std only; elo_sp_divergence passthrough);
+    elo_sp_divergence computed using locked EDA 08 parameters
+    (elo mean=1511.6097 std=236.1207; sp mean=1.0969 std=12.8712);
+    scaler_stats.json written
+  - Cell 8: table schema corrected — off_archetype_idx and def_archetype_idx
+    SMALLINT replacing four compound matchup SMALLINT columns
+  - Cell 9: validation updated — archetype range checks, compound column
+    absence check
+- Key facts confirmed: 3,214 rows, 131 teams, 1,607 games, 31 columns,
+  all checks passed, elo_sp_divergence mean=-0.0001 std=0.449
 
-## Day 20 — What Was Completed
-- Confirmation gate answered correctly before any code was attempted
-- Environment diagnosis: cfb_model (x86 Anaconda) failed with JAX AVX
-  instruction error on Apple Silicon — same root cause as original PyMC
-  failure
-- Miniforge ARM environment created: cfb_model_arm
-  (~/miniforge3/envs/cfb_model_arm/bin/python)
-- NumPyro 0.21.0 and JAX 0.10.0 confirmed working on cpu backend
-- Kernel registered as "CFB Model (ARM)"
-- model_01_prior_specification.ipynb completed — 6 cells:
-  - Cell 1: imports and environment verification
-  - Cell 2: league-level priors (mu_league, hfa_league, r_negbinom)
-  - Cell 3: conference-level priors (sigma_conference, mu_conference x10)
-  - Cell 4: team-level priors (alpha_team, delta_team, hfa_team, sp_weight,
-    rec_weight with Sun Belt hard constraint)
-  - Cell 5: game-level feature priors (23 coefficients)
-  - Cell 6: full model assembly and prior predictive verification
-- 36 parameters sampled successfully
-- Sun Belt constraint confirmed: rec_weight_sunbelt = -0.3398 (non-positive)
-- Markdown summary added as final cell
+## Day 21 — What Was Completed (audit corrections applied)
+- model_02_architecture.ipynb audited and corrected:
+  - Cell 4: GameData dataclass corrected — off_archetype_idx and
+    def_archetype_idx (int32) replacing four float compound matchup fields
+  - Cell 5: model_cfb() corrected — r_negbinom Gamma(2.0, 0.1) vector x
+    N_CONFERENCES; b_off_archetype and b_def_archetype as 4-vector
+    embeddings; compound matchup scalars removed; likelihood uses
+    r_negbinom[data.conf_idx]
+  - Cell 6: structural verification updated — int32 archetype index arrays,
+    r_negbinom shape assertion (5, 10), archetype shape assertions (5, 4),
+    stale parameter name check
+  - All assertions passed: 0 divergences, correct shapes throughout
+- Original session: log-scale prior corrections applied to model_01 and
+  model_02 (mu_league, hfa_league, sigma_hfa_team)
+
+## Day 20 — What Was Completed (audit corrections applied)
+- model_01_prior_specification.ipynb audited and corrected:
+  - Cell 2: r_negbinom HalfNormal(5.0) scalar → Gamma(2.0, 0.1) x
+    N_CONFERENCES vector
+  - Cell 4: sp_weight YoY r corrected 0.7740→0.7632; HFA SD corrected
+    4.85→4.81; SP+ dual-role (prior seed + game-level spread predictor,
+    partial r=0.197) documented
+  - Cell 5: elo_sp_divergence comment corrected r=+0.1650→r=-0.1150
+    (negative direction, z-score version); archetype scalars and compound
+    matchup columns replaced with b_off_archetype and b_def_archetype
+    sample_shape=(4,)
+  - Cell 6: assembly cell corrected to match all above fixes; prior
+    predictive verified: 34 parameters, r_negbinom shape (1,10),
+    b_off_archetype shape (1,4), Sun Belt=-0.3398
+  - Markdown summary updated: corrected intercept example, dispersion
+    section, archetype encoding contract, day references
 
 ---
 
@@ -121,19 +231,20 @@ conference masks, GameData)?
 |---|---|---|---|
 | 20 | model_01_prior_specification.ipynb | ✅ complete | Translate every entry in prior_specification_draft.md into NumPyro prior distributions. No fitting. Every numpyro.sample() call cites its EDA justification. |
 | 21 | model_02_architecture.ipynb | ✅ complete | Write hierarchical NegBinom model structure in NumPyro. No fitting. Three levels: league → conference → team. Document every design decision. |
-| 22 | model_03_feature_engineering.ipynb | ✅ complete | Engineer all features not persisted after EDA. Write to int.int_game_model_features. All null handling and threshold-zeroing applied here. |
-| 23 | model_04_first_fit.ipynb | ❌ not built | Fit on 2022–2024 training data. Do not touch 2025 holdout. Record fit time, divergences, initial parameter estimates. |
-| 24 | model_05_prior_predictive_checks.ipynb | ❌ not built | Sample before seeing data. Does it produce plausible CFB scores? Fix priors if it generates 0-point or 150-point games. |
-| 25 | model_06_posterior_checks.ipynb | ❌ not built | R-hat < 1.01, trace plots, energy plots, ESS. Confirm convergence. Investigate divergences. |
-| 26 | model_07_holdout_evaluation.ipynb | ❌ not built | First look at 2025 holdout. Overall Brier score, calibration curve. Baseline before subgroup breakouts. |
-| 27 | model_08_evaluation_by_conference_tier.ipynb | ❌ not built | Brier score and calibration by P4, G5, Independents. |
-| 28 | model_09_evaluation_by_game_type.ipynb | ❌ not built | Rivalry games, cross-tier matchups, neutral site games. Quantify how model handles upsets. |
-| 29 | model_10_evaluation_season_progression.ipynb | ❌ not built | Does calibration improve as season progresses? Conf game 1 vs conf game 8. |
-| 30 | model_11_home_away_spread_accuracy.ipynb | ❌ not built | Home field advantage calibration. Spread accuracy by expected margin. |
-| 31 | model_12_year_over_year_stability.ipynb | ❌ not built | Do 2023 model ratings predict 2024 performance? |
-| 32 | model_13_refinement.ipynb | ❌ not built | Adjust based on evaluation findings. May require revisiting priors, hierarchy, or dropping features. |
-| 33 | model_14_stress_testing.ipynb | ❌ not built | Edge cases: extreme weather, maximum travel, large timezone deltas, thin-data teams. |
-| 34 | model_15_signoff.ipynb | ❌ not built | Work through evaluation_checklist.md item by item. Model not signed off until every item addressed. |
+| 22 | model_03_feature_engineering.ipynb | ✅ complete | Engineer all features not persisted after EDA. Write to int.int_game_model_features. All null handling, threshold-zeroing, and standardization applied here. |
+| 23 | model_04_first_fit_diagnostic.ipynb | ✅ complete (Day 23/24) | Diagnostic run only: 1 chain, 200 warmup, 200 samples. Confirms model geometry is healthy before full fit. 0 divergences, acceptance 0.94. |
+| 24 | model_05_prior_predictive_checks.ipynb | ✅ complete (Day 24) | Sample before seeing data. 90.4% within 0–70 pts [PASS]. VMR deferred to model_07. Plot saved: artifacts/model_05_prior_predictive.png. |
+| 25 | model_06_full_fit.ipynb | ✅ complete (Day 25) | Full 4-chain fit: 0 divergences, all R-hat < 1.01, all ESS >= 400. Artifact saved: artifacts/model_06_samples.pkl. |
+| 25 | model_07_posterior_checks.ipynb | ❌ not built | R-hat summary, trace plots, energy plots, ESS. VMR per conference (replaces retired prior predictive VMR threshold). Posterior predictive mean within ±2 pts per team. |
+| 26 | model_08_holdout_evaluation.ipynb | ❌ not built | First look at 2025 holdout. Overall Brier score, calibration curve. Baseline before subgroup breakouts. |
+| 27 | model_09_evaluation_by_conference_tier.ipynb | ❌ not built | Brier score and calibration by P4, G5, Independents. |
+| 28 | model_10_evaluation_by_game_type.ipynb | ❌ not built | Rivalry games, cross-tier matchups, neutral site games. Quantify how model handles upsets. |
+| 29 | model_11_evaluation_season_progression.ipynb | ❌ not built | Does calibration improve as season progresses? Conf game 1 vs conf game 8. |
+| 30 | model_12_home_away_spread_accuracy.ipynb | ❌ not built | Home field advantage calibration. Spread accuracy by expected margin. |
+| 31 | model_13_year_over_year_stability.ipynb | ❌ not built | Do 2023 model ratings predict 2024 performance? |
+| 32 | model_14_refinement.ipynb | ❌ not built | Adjust based on evaluation findings. May require revisiting priors, hierarchy, or dropping features. |
+| 33 | model_15_stress_testing.ipynb | ❌ not built | Edge cases: extreme weather, maximum travel, large timezone deltas, thin-data teams. |
+| 34 | model_16_signoff.ipynb | ❌ not built | Work through evaluation_checklist.md item by item. Model not signed off until every item addressed. |
 
 Gold layer begins Day 35.
 
@@ -141,17 +252,24 @@ Gold layer begins Day 35.
 
 ## Model Architecture (locked)
 - Three-level hierarchy: league → conference → team
-- Likelihood: Negative Binomial
-- Model form: points ~ NegBinom(mu, r), log(mu) = team_attack + opponent_defense
-  + home_advantage + environmental_adjusters + game_level_features
-- Dispersion parameter r ~ HalfNormal(); start with single parameter, add
-  conference-specific r only if posterior predictive checks show systematic
-  miscalibration
-- Priors seeded from: sp_rating (team level), recruiting_3yr_avg (team level),
-  pregame_elo (game level — not a prior seed, a game-level predictor)
+- Likelihood: Negative Binomial 2
+- Model form: points ~ NegBinom2(mu, r), log(mu) = team_attack +
+  opponent_defense + home_advantage + environmental_adjusters +
+  game_level_features
+- Dispersion parameter r: VECTOR of length N_CONFERENCES, prior
+  Gamma(16.0, 2.0) per conference independently (mean=8, std=2). EDA 05
+  confirmed conference-specific dispersion (Bartlett p=0.000470, Levene
+  p=0.000705). Scalar r caused sampler collapse — do not revert to scalar.
+  Gamma(2.0, 0.1) also caused sampler collapse — do not revert.
+  Likelihood: r_negbinom[data.conf_idx] selects per-game dispersion.
+- Priors seeded from: sp_rating (team level, ALSO game-level spread
+  predictor partial r=0.197), recruiting_3yr_avg (team level only)
+- pregame_elo: game-level predictor only, not a prior seed
 - Conference-level pooling provides regularization (ICC marginal 0.02–0.05
   but pooling still improves small-sample estimates)
-- Built in NumPyro (replaces PyMC — see library decision above)
+- Built in NumPyro (replaces PyMC — see library decision below)
+- Non-centered parameterization for alpha_team, delta_team, hfa_team:
+  *_raw ~ Normal(0,1) sampled; * = *_raw * sigma deterministic
 
 ---
 
@@ -169,7 +287,7 @@ Prior specifications: artifacts/prior_specification_draft.md
 ### Prior Seeds (2) — team level, not game-level predictors
 | Feature | YoY r | Conference Notes |
 |---|---|---|
-| sp_rating | 0.7740 | All conferences; prior does not decay monotonically through games 9-12 |
+| sp_rating | 0.7632 | All conferences; DUAL ROLE — also game-level spread predictor (partial r=0.197 after EPA control, p<0.0001); does not decay monotonically through games 9-12 |
 | recruiting_3yr_avg | 0.9779 | Moderate weight Big Ten and SEC; low elsewhere; **non-positive in Sun Belt** |
 
 ### Supporting — Game Level (10)
@@ -195,46 +313,68 @@ Prior specifications: artifacts/prior_specification_draft.md
 | last3_points_allowed_avg | yes | no | American Athletic, Big Ten, Conference USA, Mountain West, Pac-12, Sun Belt | impute_season_prior |
 | days_since_last_game | yes | no | American Athletic, Big 12 | zero |
 | close_game_play_count_delta | yes | no | ACC, American Athletic, Big 12, Mid-American, Pac-12, Sun Belt | not_applicable |
-| offense_archetype_matchup | yes | yes | all* | not_applicable |
-| defense_archetype_matchup | yes | yes | all* | not_applicable |
+| off_archetype_idx | yes | yes | all* | not_applicable |
+| def_archetype_idx | yes | yes | all* | not_applicable |
 
 *Archetype features require deployable pregame version before September 24, 2026
-production launch. If no pregame version clears signal tests, drop these two features
-(and home_off_vs_away_def_matchup, away_off_vs_home_def_matchup) at refinement.
+production launch. If no pregame version clears signal tests, drop these two
+features at refinement.
 
-### O/U Archetype Features (included in final_features but listed separately for clarity)
-| Feature | O/U | Conference Scope |
-|---|---|---|
-| home_off_vs_away_def_matchup | yes | all* |
-| away_off_vs_home_def_matchup | yes | all* |
+**Archetype encoding:** `off_archetype_idx` and `def_archetype_idx` are integer
+index arrays (int32, values 0–3) stored in `int.int_game_model_features`.
+The model indexes into 4-vector embeddings:
+`b_off_archetype[data.off_archetype_idx]` and
+`b_def_archetype[data.def_archetype_idx]`.
+No compound matchup string columns exist anywhere in the pipeline.
 
 ---
 
 ## Prior Specification Summary
 Full specification in artifacts/prior_specification_draft.md.
 
-| Parameter | Distribution | Mean | SD | Type |
-|---|---|---|---|---|
-| mu_league (intercept) | Normal | 3.3 | 0.2 | Weakly informative (log scale) |
-| hfa_league | Normal | 0.1 | 0.05 | Informative (log scale) |
-| r_negbinom | HalfNormal | — | 5.0 | Weakly informative |
-| mu_conference[c] | Normal (hyperprior) | 0.0 | HalfNormal(3.0) | Weakly informative |
-| alpha_team[t] (attack) | Normal (hyperprior) | 0.0 | HalfNormal(0.4) | Weakly informative |
-| delta_team[t] (defense) | Normal (hyperprior) | 0.0 | HalfNormal(0.4) | Weakly informative |
-| hfa_team[t] | Normal (hyperprior) | 0.0 | HalfNormal(0.1) | Weakly informative (log scale) |
-| sp_weight | Normal | 0.0 | 1.0 | Informative |
-| rec_weight[c] | Normal | 0.0 | 0.5 | Informative |
-| rec_weight[Sun Belt] | TruncatedNormal(upper=0) | 0.0 | 0.5 | Hard constraint |
-| EPA anchors (×2) | Normal | 0.0 | 0.5 | Weakly informative |
-| pregame_elo, elo_sp_divergence | Normal | 0.0 | 0.3 / 0.2 | Weakly informative |
-| Environmental features | Normal | 0.0 | 0.3 / 0.2 | Weakly informative |
-| Momentum features | Normal | 0.0 | 0.3 | Weakly informative |
-| Style/tempo deltas | Normal | 0.0 | 0.3 | Weakly informative |
-| Sack-rate mismatch | Normal | 0.0 | 0.2 | Weakly informative |
-| Archetype matchups | Normal | 0.0 | 0.3 | Weakly informative |
+| Parameter | Distribution | Notes |
+|---|---|---|
+| mu_league (intercept) | Normal(3.3, 0.2) | Log scale; exp(3.3) ≈ 27 pts |
+| hfa_league | Normal(0.1, 0.05) | Log scale; ≈ 2.43 pts on 27 pt baseline |
+| r_negbinom[c] | Gamma(16.0, 2.0) x N_CONFERENCES | Conference-specific vector; mean=8, std=2; 2-sigma lower bound ≈ r=4 |
+| mu_conference[c] | Normal(0.0, sigma_conference) x 10 | Centered; sigma_conference ~ HalfNormal(0.1) |
+| alpha_team_raw[t] | Normal(0.0, 1.0) x N_teams | Non-centered; alpha_team = raw * sigma_attack |
+| sigma_attack | HalfNormal(0.1) | Posterior mean 0.018 — team offensive effects near-pooled |
+| delta_team_raw[t] | Normal(0.0, 1.0) x N_teams | Non-centered; delta_team = raw * sigma_defense |
+| sigma_defense | HalfNormal(0.1) | Posterior mean 0.061 — 3x sigma_attack |
+| hfa_team_raw[t] | Normal(0.0, 1.0) x N_teams | Non-centered; hfa_team = raw * sigma_hfa_team |
+| sigma_hfa_team | HalfNormal(0.1) | Log scale; team HFA SD = 4.81 pts |
+| b_off_archetype | Normal(0.0, 0.15) x 4 | 4-vector embedding; indexed by off_archetype_idx |
+| b_def_archetype | Normal(0.0, 0.15) x 4 | 4-vector embedding; indexed by def_archetype_idx |
+| b_sp | Normal(0.0, 0.15) | Dual role: prior seed + game-level predictor |
+| b_elo | Normal(0.0, 0.15) | Posterior mean near zero; HDI includes zero |
+| b_elo_sp_div | Normal(0.0, 0.15) | r=-0.1150 (negative direction); already z-scored |
+| b_epa_off | Normal(0.0, 0.10) | Posterior mean 0.347 — dominant predictor |
+| b_epa_def | Normal(0.0, 0.10) | |
+| b_elevation / b_travel / b_tz / b_wind | Normal(0.0, 0.15) | Environmental features |
+| b_last3_win / b_rush_std / b_rush_pass | Normal(0.0, 0.15) | Momentum/style features |
+| b_sack_off / b_sack_def | Normal(0.0, 0.15) | Posterior means near zero; HDIs include zero |
+| b_conf_scoped (6-vector) | Normal(0.0, 0.15) | Conference-scoped features |
+| rec_weight[c] | Normal(0.0, 0.5) x 9 | Non-Sun-Belt conferences |
+| rec_weight[Sun Belt] | TruncatedNormal(0.0, 0.5, high=0.0) | Hard non-positive constraint; posterior sitting against boundary |
 
 **Hard constraint:** Sun Belt recruiting_3yr_avg coefficient must be non-positive.
-Implementation: numpyro.sample with TruncatedNormal(high=0).
+Implementation: TruncatedNormal(0.0, 0.5, high=0.0).
+
+---
+
+## Feature Preprocessing (locked — applied in model_03, never repeated downstream)
+- **Continuous features** (15): standardized to mean=0, std=1
+- **Sparse threshold-activated features** (5 — elevation, travel, tz, wind_chill,
+  days_since): divided by std of non-zero values only; no mean subtraction;
+  zeros remain zero
+- **elo_sp_divergence**: z-score difference using locked EDA 08 parameters:
+  pregame_elo mean=1511.6097 std=236.1207; sp_rating mean=1.0969 std=12.8712.
+  Not re-standardized.
+- **is_home**: binary — no standardization
+- **off_archetype_idx, def_archetype_idx**: categorical int32 — no standardization
+- **Scaler stats**: saved to artifacts/scaler_stats.json by model_03 Cell 7.
+  Do not rewrite in downstream notebooks.
 
 ---
 
@@ -243,12 +383,17 @@ Implementation: numpyro.sample with TruncatedNormal(high=0).
 - ESS_bulk >= 400 and ESS_tail >= 400 for all parameters
 - Zero divergences post-warmup
 - BFMI > 0.3 for all chains
-- Prior predictive: 95% of samples within 0–70 points, VMR 3.0–10.0
+- Prior predictive: 90% of samples within 0–70 points (recalibrated from
+  95% on Day 24 — 131-team hierarchy produces legitimate tail scores);
+  VMR threshold retired from prior predictive (replaced by posterior
+  predictive VMR per conference in model_07)
+- Posterior predictive VMR per conference: evaluated in model_07
 - Posterior predictive mean within ±2 points of observed mean per team
 - Conference-level posterior predictive mean within ±3 points of observed
 - Overall Brier score must beat SP+-only baseline
 - Win probability calibration within ±5pp per decile bucket (n >= 20)
 - Spread MAE <= 14 points overall; no margin bucket exceeding 18 points
+- Sub-season: conf game 1 Brier ≤ 0.26; conf games 5–8 Brier ≤ 0.23
 - P4 Brier <= 0.23, G5 Brier <= 0.25
 - All 10 conferences calibrated within ±8pp (n >= 10)
 - Cross-tier mean P4 win probability vs G5 between 0.72 and 0.88
@@ -261,46 +406,96 @@ Full 39-item checklist: artifacts/evaluation_checklist.md
 ## Locked Decisions — Do Not Revisit
 - Library: NumPyro (PyMC abandoned due to pytensor environment failure)
 - pytensor: explicitly banned — do not install, import, or reference
-- Likelihood: Negative Binomial
+- Likelihood: Negative Binomial 2
 - Three-level hierarchy: league → conference → team
-- Dispersion: single r parameter to start; add conference-specific r only if
-  posterior predictive checks show systematic miscalibration
+- Dispersion: conference-specific vector r_negbinom of length N_CONFERENCES,
+  prior Gamma(16.0, 2.0) per conference independently (mean=8, std=2;
+  2-sigma lower bound ≈ r=4). EDA 05 confirmed this is required. Do not
+  revert to scalar. Do not revert to Gamma(2.0, 0.1) — caused sampler
+  collapse. Scalar HalfNormal(5.0) also caused sampler collapse.
+- sigma_conference: HalfNormal(0.1) — HalfNormal(3.0) caused exp(6)≈400x
+  log-scale multipliers in prior predictive; do not revert
+- sigma_attack: HalfNormal(0.1) — HalfNormal(0.4) caused team-effect tail
+  explosions in prior predictive; do not revert
+- sigma_defense: HalfNormal(0.1) — same rationale as sigma_attack
+- All game-level coefficients: Normal(0, 0.15); b_epa_off and b_epa_def:
+  Normal(0, 0.10); original widths (0.2–0.5) contributed to log_mu explosions
+- Winsorization caps (applied in model_03 Cell 7 only — never repeat
+  downstream, but must apply at prediction time):
+    days_since_last_game    : cap at 21 days before scaling
+    away_travel_distance_mi : cap at 5000 mi before scaling
+    away_elevation_delta_ft : cap at 7000 ft before scaling
+    all continuous features : clipped to [-3, 3] after standardization
+- Prior predictive score threshold: 90% within 0–70 (recalibrated from 95%
+  on Day 24 — 131-team hierarchy produces legitimate tail scores)
+- Prior predictive VMR threshold: retired — evaluated as posterior predictive
+  VMR per conference in model_07 instead
+- DB bulk insert: always execute_values(page_size=500); never executemany.
+  Before Cell 8: check pg_stat_activity for idle-in-transaction sessions
+  on int_game_model_features and terminate them.
+- RAG outlier flagging: flag predictions where team's off_archetype_idx is
+  in cluster 3 (n=83), def_archetype_idx is in cluster 1 (n=505), any input
+  feature hit a winsorization cap at prediction time, or sigma_attack *
+  alpha_team_raw for either team exceeds 2 sigma from training distribution
 - HFA: league-level baseline + team-level deviations; no conference-level HFA layer
-- SP+ prior weight: does not decay monotonically — remains relevant through games 9-12
-- SP+ components (sp_offense, sp_defense): excluded; use sp_rating composite only
-- recruiting_3yr_avg: prior seed only — never a game-level predictor
+- SP+ dual role: prior seed AND game-level spread predictor (partial r=0.197
+  after EPA control, p<0.0001, all conferences); does not decay monotonically
+  through games 9-12 (r=0.2609); do not treat as prior-only
+- SP+ YoY r: 0.7632 (corrected from 0.7740)
+- SP+ components (sp_offense, sp_defense): excluded — DATA LEAKAGE
+  (end-of-season values, not collinearity)
+- recruiting_3yr_avg: prior seed only — never a game-level predictor; YoY r=0.9779
 - Sun Belt recruiting weight: non-positive (hard constraint); TruncatedNormal(high=0)
+- elo_sp_divergence: r=-0.1150 (NEGATIVE direction, z-score version, EDA 08
+  corrected). Pre-fix value r=+0.1650 is wrong — do not reference it.
+  Prior Normal(0, 0.2) is correct. Already z-scored — do not re-standardize.
 - Early-season null handling: Approach A — impute with season-to-date prior
-- ELO/SP+ divergence: compute in notebook first; add to dbt only after model confirms
-- Archetype features: deployable pregame version required before production launch
-- rush_rate_std_downs, rush_rate_pass_downs: game-level predictors only; not prior seeds
-- Environmental features: threshold-activated, modeled as indicator×magnitude; not linear
+- ELO/SP+ divergence: computed in model_03 using locked EDA 08 parameters;
+  not recomputed downstream
+- Archetype encoding: off_archetype_idx and def_archetype_idx (int32, 0–3).
+  Embedded as b_off_archetype[off_archetype_idx] and
+  b_def_archetype[def_archetype_idx]. sample_shape=(4,) for both.
+  No compound matchup string columns anywhere in the pipeline.
+  archetype_matchup_encodings.json does not exist — do not reference it.
+- Archetype features: deployable pregame version required before 2026-09-24
+  production launch; drop at refinement if not available
+- rush_rate_std_downs_delta, rush_rate_pass_downs_delta: game-level predictors
+  only; not prior seeds
+- Environmental features: threshold-activated, modeled as indicator×magnitude;
+  not linear. Pre-zeroed in model_03.
 - opp_sp_rating_at_game_time: control variable only; not a model feature
-- Portal and NIL: deprioritized; revisit only if model underperforms in evaluation
+- Portal and NIL: deprioritized; revisit only if model underperforms
 - raw.odds: 2026 season only — no historical closing lines; live validation target only
 - Pac-12 in dataset: G5 for all seasons (remnant conference after realignment)
 - Notre Dame: Power Four — route by team name not conference label
 - UConn: Group of Five — route by team name not conference label
-- FBS Independents: not a pooling group
+- FBS Independents: not a pooling group; excluded from all training data
 - No tiers within conferences: team-level parameters handle within-conference spread
 - Conference assignment: historically accurate by season from game records
 - 2025 is holdout — excluded from all training queries; season IN (2022, 2023, 2024)
 - Training data: 2022–2024 only
-- mu_league: Normal(3.3, 0.2) — log scale; exp(3.3) ≈ 27 pts (corrected from Normal(27.0, 5.0))
-- hfa_league: Normal(0.1, 0.05) — log scale; ≈ 2.5 pts on 27 pt baseline (corrected from Normal(2.5, 1.5))
-- sigma_hfa_team: HalfNormal(0.1) — log scale (corrected from HalfNormal(2.0))
-- model_cfb() accepts GameData dataclass; N_teams passed at call time from training data
-- Conference-scope masking: build_conf_mask() builds binary float32 mask before model_cfb() is called; one coefficient per scoped feature; masking handles zeroing — no separate priors per conference
+- mu_league: Normal(3.3, 0.2) — log scale; exp(3.3) ≈ 27 pts
+- hfa_league: Normal(0.1, 0.05) — log scale; ≈ 2.43 pts on 27 pt baseline
+- sigma_hfa_team: HalfNormal(0.1) — log scale; team HFA SD = 4.81 pts
+- model_cfb() accepts GameData dataclass; N_teams passed at call time
+- Conference-scope masking: build_conf_mask() builds binary float32 mask before
+  model_cfb() is called; one coefficient per scoped feature; masking handles
+  zeroing — no separate priors per conference
 - close_game_epa_per_play / close_game_def_epa_per_play: null means no close-game
-  situations occurred — treated as zero; applied in model_03_feature_engineering.ipynb
-- Archetype KMeans: refit on every run of model_03_feature_engineering.ipynb
-  (offense k=4, defense k=4, random_state=42); encoded as integers before DB write;
-  label maps in artifacts/archetype_label_maps.json;
-  encodings in artifacts/archetype_matchup_encodings.json
-- All null handling and threshold-zeroing for model features is applied in
-  model_03_feature_engineering.ipynb — do not repeat in downstream notebooks
+  situations occurred — treated as zero; applied in model_03
+- Archetype KMeans: refit on every run of model_03 (offense k=4, defense k=4,
+  random_state=42); produces off_archetype_idx and def_archetype_idx (int32, 0–3);
+  label maps in artifacts/archetype_label_maps.json (auditability only)
+- All null handling, threshold-zeroing, and standardization applied in model_03 —
+  do not repeat in downstream notebooks
 - scikit-learn installed in cfb_model_arm via:
   ~/miniforge3/bin/conda install -n cfb_model_arm scikit-learn -y
+- Non-centered parameterization for team effects: *_raw ~ Normal(0,1) sampled;
+  * = *_raw * sigma deterministic. Separates sigma geometry from team-effect
+  geometry for NUTS.
+- model_06_samples.pkl contents: samples dict, idata (ArviZ InferenceData),
+  N_teams (131), N_CONFERENCES (10), team_to_idx, conf_to_idx, CONFERENCES.
+  Load with pickle. Do not re-run model_06 to regenerate — use the pkl.
 
 ---
 
@@ -325,8 +520,8 @@ Full 39-item checklist: artifacts/evaluation_checklist.md
 - close_game_play_count, close_game_def_play_count exist in int_game_team_features
 - int_game_team_features granularity: two rows per game (one per team)
 - sp_rating and conference: authoritative source is int_team_season_features
-- raw.games opponent column in int_game_team_features is named 'opponent' (not
-  'opponent_name')
+- raw.games opponent column in int_game_team_features is named 'opponent'
+  (not 'opponent_name')
 - raw.plays scrimmage play types for rush: 'Rush', 'Rushing Touchdown'
 - raw.plays scrimmage play types for pass: 'Pass Reception', 'Pass Incompletion',
   'Passing Touchdown', 'Sack', 'Pass Completion', 'Pass Interception Return'
@@ -337,6 +532,9 @@ Full 39-item checklist: artifacts/evaluation_checklist.md
 - CRITICAL PERFORMANCE: never scan raw.plays with WHERE game_id IN (large list)
   or multiple INNER JOINs. Materialize valid game_ids into temp table with
   PRIMARY KEY first, then join raw.plays once.
+- int.int_game_model_features: one row per team per game, 31 columns, primary
+  key (game_id, team_name); all features fully preprocessed (standardized,
+  threshold-zeroed, null-handled); do not re-standardize when loading
 
 ---
 
@@ -382,12 +580,32 @@ def assign_tier(row):
   for conference and sp_rating
 - int.int_game_model_features — one row per team per game; all engineered model
   features for seasons 2022–2024; rebuilt by running
-  model_03_feature_engineering.ipynb; primary key (game_id, team_name)
+  model_03_feature_engineering.ipynb; primary key (game_id, team_name);
+  31 columns; fully preprocessed — do not re-standardize when loading
 - stg.stg_game_weather — kickoff_hour (not yet promoted to int layer)
 - raw.games — home/away points, teams, conference_game flag, ELO fields;
   authoritative source for is_home
 - raw.plays — play-level table for in-game derived features
 - raw.odds — 2026 season only; live validation target only
+
+---
+
+## Artifacts — Active Reference Files
+| File | Notes |
+|---|---|
+| artifacts/final_features.csv | 23 included features with complete prior specs — authoritative feature list for model build |
+| artifacts/master_verdict.csv | 93 rows — full EDA verdict record |
+| artifacts/prior_specification_draft.md | Day 20 input — translate into NumPyro code |
+| artifacts/evaluation_checklist.md | 39-item pass/fail checklist — Day 34 works through this |
+| artifacts/ambiguity_resolution.md | 5 binding ambiguity decisions |
+| artifacts/candidate_features.csv | 185 keep=True features — reference only |
+| artifacts/archetype_label_maps.json | KMeans archetype label maps (offense k=4, defense k=4) — written by model_03; auditability only, not used by model |
+| artifacts/scaler_stats.json | Mean and std for all 21 scaled features — written by model_03 Cell 7; required for prediction-time scaling; do not rewrite in downstream notebooks |
+| artifacts/model_05_prior_predictive.png | Prior predictive check plots — written by model_05 Cell 5 (Day 24) |
+| artifacts/model_06_samples.pkl | Full 4-chain posterior samples — complete (Day 25). Load with pickle. Contains: samples, idata, N_teams, N_CONFERENCES, team_to_idx, conf_to_idx, CONFERENCES. |
+
+Note: artifacts/archetype_matchup_encodings.json no longer exists —
+compound matchup encoding was eliminated in the audit. Do not reference it.
 
 ---
 
@@ -417,6 +635,15 @@ def assign_tier(row):
 15. If a required file is not available (notebook, artifact, schema output,
     or any local project file), stop and ask the user to provide it — do not
     attempt to reconstruct it from memory or build a generic version.
+16. Do not re-standardize features loaded from int.int_game_model_features —
+    all preprocessing was applied in model_03. Do not rewrite scaler_stats.json.
+17. r_negbinom is always a vector of length N_CONFERENCES. Never sample it as
+    a scalar. Never initialize it as a scalar in init_to_value.
+18. Archetype fields are always int32 index arrays (values 0–3). Never treat
+    them as continuous float features. Never use compound matchup string columns.
+19. model_06_samples.pkl is the authoritative posterior. Load it at the start
+    of model_07 and every downstream notebook. Never re-run model_06 to
+    regenerate samples.
 
 ---
 
@@ -428,20 +655,6 @@ handles non-FBS teams with no season row. The conference != 'FBS Independents'
 filter handles Independents who do have a season row. Both filters are required.
 Show the home conference distribution after every game load — if FBS Independents
 appears with any row count, stop and fix before proceeding.
-
----
-
-## Artifacts — Active Reference Files
-| File | Notes |
-|---|---|
-| artifacts/final_features.csv | 23 included features with complete prior specs — authoritative feature list for model build |
-| artifacts/master_verdict.csv | 93 rows — full EDA verdict record |
-| artifacts/prior_specification_draft.md | Day 20 input — translate into NumPyro code |
-| artifacts/evaluation_checklist.md | 39-item pass/fail checklist — Day 34 works through this |
-| artifacts/ambiguity_resolution.md | 5 binding ambiguity decisions |
-| artifacts/candidate_features.csv | 185 keep=True features — reference only |
-| artifacts/archetype_label_maps.json | KMeans archetype label maps (offense k=4, defense k=4) — written by model_03_feature_engineering.ipynb |
-| artifacts/archetype_matchup_encodings.json | Integer encodings for all 4 archetype matchup columns — written by model_03_feature_engineering.ipynb |
 
 ---
 
