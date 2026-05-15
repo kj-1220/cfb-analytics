@@ -3,6 +3,28 @@ project. Do not use any other kernel.
 
 ---
 
+## What This Project Is
+
+A production AI-powered college football analytics and betting research
+platform. The Bayesian model predicts score distributions for each team in
+a game. From those distributions the platform derives win probability,
+predicted spread, and predicted moneyline. Claude acts as a reasoning layer
+over those outputs — it never predicts on its own, it reasons over what the
+model produced.
+
+Hard deadline: September 24, 2026 — first Saturday of Sun Belt conference
+play. This is not the start of the season. It is the start of conference
+games. Target matchup: Liberty vs Coastal Carolina.
+
+College basketball parallel track: January 3, 2027.
+
+The model is one component of a larger system: Postgres data layer, dbt
+silver/gold layer, FastAPI backend, RAG corpus, React frontend with matchup
+pages, conference dashboards, and an AI analyst chat panel. The model build
+phase (this document) must be complete before gold layer work begins.
+
+---
+
 ## ⚠️ CRITICAL — How Notebooks Are Written In This Project
 This rule overrides everything else. Read it before doing anything.
 
@@ -20,95 +42,109 @@ Python code blocks.
 
 ---
 
-## ⚠️ CRITICAL — Confirmation Gate
-Rewritten each session to reflect what the next notebook must understand.
+## What Comes Next
 
-**Next notebook: Day 25 (continued) — model_07_posterior_checks.ipynb**
+Next notebook: model_08_refit_and_posterior_checks.ipynb (Day 26)
 
-Answer these questions in your own words before writing any code:
+model_08 is a combined refit and full posterior check in a single notebook.
+The refit uses corrected priors identified from model_07 findings. All
+posterior checks must pass in the same notebook before evaluation begins.
 
-**Question 1:** model_06 showed sigma_attack posterior mean = 0.018 and
-sigma_defense posterior mean = 0.061 — a 3x difference. What does this
-asymmetry tell you about team-level heterogeneity in the data? Does it
-change anything about how you interpret posterior team ratings?
+Before writing any code, request these two notebooks from the user:
+  model_06_full_fit.ipynb
+  model_07_posterior_checks.ipynb
 
-**Question 2:** model_07 must compute posterior predictive VMR per conference
-as a replacement for the retired prior predictive VMR threshold. Describe
-exactly how you would compute this: what data do you use, what do you
-condition on, and what makes a result a pass vs a flag?
+Do not write a single cell until both are attached and read. The model
+definition in model_08 Cell 2 must be copied verbatim from model_06 Cell 2
+with only the three prior changes below. Do not reconstruct from memory.
 
-**Question 3:** b_close_game_epa posterior mean = 0.347 — roughly 30x larger
-than any other game-level coefficient. Its HDI (0.333, 0.360) does not
-include zero. What does this mean for the model's predictive behavior?
-Is there anything to check in the posterior predictive plots specifically
-because of this?
+Three priors changed from model_06 (change nothing else):
+  r_negbinom   : Gamma(16.0, 2.0) -> Gamma(4.0, 0.5)  [mean=8, std=4]
+  sigma_attack : HalfNormal(0.1)  -> HalfNormal(0.25)
+  sigma_defense: HalfNormal(0.1)  -> HalfNormal(0.25)
 
----
+Rationale:
+  r_negbinom: model_07 showed all 10 conferences flagged on VMR check.
+  Posterior means 12-18 imply VMR 2.3-3.0; observed VMR 4.8-7.2. Prior
+  Gamma(16,2) too narrow — resisting low-r values data prefers (~5-8).
+  sigma_attack/defense: 95/131 teams outside +-2 pt mean threshold.
+  Posterior means 0.018/0.061 too small — team effects compressed toward
+  league mean. Elite teams under-predicted, weak teams over-predicted.
+
+Required checks in model_08 (all must pass before closing notebook):
+  R-hat < 1.01 for all parameters
+  ESS_bulk >= 400, ESS_tail >= 400 for all parameters
+  0 divergences
+  BFMI > 0.3 for all chains
+  Posterior predictive VMR: observed VMR inside 90% CI per conference
+  Team-level mean: predicted within +-2 pts of observed per team
+  Conference-level mean: predicted within +-3 pts of observed
+
+BFMI requires capturing energy at fit time. Add to MCMC.run():
+  extra_fields=('energy',)
+And save in pkl:
+  artifact['energy'] = mcmc.get_extra_fields()['energy']
+model_06 did not capture energy — BFMI was not computable from that pkl.
+model_08 must not repeat this.
+
+Save samples to: artifacts/model_08_samples.pkl
+
+After model_08, the next notebook is model_09_holdout_evaluation.ipynb.
 
 ## Day 25 — What Was Completed
 
-model_06_full_fit.ipynb — 7 cells, complete and verified.
+model_06_full_fit.ipynb — complete (8 cells, all run and verified):
+  Full 4-chain fit: 4 chains, 1000 warmup, 1000 samples. 0 divergences.
+  Wall-clock: 648.6s. Acceptance probs: 0.93 / 0.90 / 0.92 / 0.91.
+  All convergence thresholds passed:
+    R-hat < 1.01: PASS all parameters
+    ESS_bulk >= 400: PASS all parameters (lowest: sigma_attack 1092)
+    ESS_tail >= 400: PASS all parameters
+    Team-level max R-hat: alpha_team_raw 1.0065, delta_team_raw 1.0063,
+    hfa_team_raw 1.0040 — all PASS
+  Key posterior means:
+    mu_league: 3.1935  hfa_league: 0.0294  sp_weight: 0.0637
+    sigma_attack: 0.0182  sigma_defense: 0.0610
+    r_negbinom: ACC/SEC 17.5-17.8, Big Ten/CUSA 11.9-12.1
+    b_close_game_epa: 0.347 (dominant, HDI excludes zero)
+    b_pregame_elo: 0.002 (weak, HDI includes zero)
+    rec_weight_sunbelt: -0.048 (constraint active)
+  NOTE: energy not captured in pkl — BFMI not computable from model_06
+  samples. Action item: model_08 must use extra_fields=('energy',) and
+  save energy array in pkl.
+  Artifact saved: artifacts/model_06_samples.pkl (78.7 MB)
+  Misplaced artifacts moved from notebooks/Model/artifacts to artifacts/
 
-Full production fit: 4 chains, 1000 warmup, 1000 samples.
-Wall-clock: 654.2s (chains run sequentially — single CPU device;
-UserWarning issued but expected on this hardware).
+model_07_posterior_checks.ipynb — complete (9 cells, all run and verified):
+  R-hat, ESS, trace plots confirmed passing (recomputed from pkl).
+  Chain mixing excellent — spread across chains < 0.002 for all watch params.
+  BFMI not recoverable from pkl — documented with surrogate evidence.
+  Divergences: 0 / 4000 confirmed from sample_stats.
 
-Sampler results:
-  Divergences      : 0 / 4000
-  Acceptance probs : 0.93 / 0.90 / 0.92 / 0.91 — all on target
-  Leapfrog steps   : 127 across all four chains — consistent geometry
+  TWO STRUCTURAL FINDINGS requiring refit (model_08):
 
-Convergence — all thresholds passed:
-  R-hat < 1.01         : PASS (all parameters)
-  ESS_bulk >= 400      : PASS (all parameters)
-  ESS_tail >= 400      : PASS (all parameters)
+  Finding 1 — VMR gap (all 10 conferences flagged):
+    Observed VMR: 4.8–7.2 per conference
+    Posterior predictive VMR 90% CI: 2.1–4.0
+    Implied VMR from NegBin2(mu, r) at posterior means: 2.3–3.0
+    Root cause: r_negbinom Gamma(16,2) prior too narrow; posterior means
+    12–18 are too high; data prefers r ≈ 5–8 to match observed variance.
+    Fix: r_negbinom prior Gamma(16.0, 2.0) -> Gamma(4.0, 0.5) [mean=8, std=4]
 
-Team-level array diagnostics (max R-hat across 131 teams):
-  alpha_team_raw : max_rhat=1.0065  min_ess_bulk=4292  min_ess_tail=1915
-  delta_team_raw : max_rhat=1.0063  min_ess_bulk=7550  min_ess_tail=2293
-  hfa_team_raw   : max_rhat=1.0040  min_ess_bulk=4738  min_ess_tail=2055
+  Finding 2 — team-level mean compression (95/131 teams flagged):
+    95 of 131 teams outside +-2 pt posterior predictive mean threshold.
+    Pattern: elite teams under-predicted (Oregon -15, Ohio State -12,
+    Georgia -12), weak teams over-predicted (Kent State +6.7,
+    Northwestern +5.6, Michigan State +5.7).
+    Root cause: sigma_attack=0.018, sigma_defense=0.061 too small;
+    team random effects compressed toward league mean.
+    Conference-level: Big 12 -4.88, Pac-12 -5.91, SEC -4.15 all flagged.
+    Fix: sigma_attack and sigma_defense HalfNormal(0.1) -> HalfNormal(0.25)
 
-Key posterior means (full fit — authoritative):
-  mu_league        : 3.1935
-  hfa_league       : 0.0294   (below prior center 0.1; stable vs diagnostic)
-  sigma_attack     : 0.0182   (low; ESS_bulk=1092, ESS_tail=1733 — both pass)
-  sigma_defense    : 0.0610   (3x sigma_attack — notable asymmetry)
-  sigma_hfa_team   : 0.0262
-  sigma_conference : 0.0773
-  sp_weight        : 0.0637
-  b_close_game_epa : 0.3472   (dominant signal; HDI 0.333–0.360, no zero)
-
-r_negbinom posterior means by conference (authoritative — use these, not
-the diagnostic run notebook summary which reflected a different prior):
-  ACC              : 17.77
-  American Athletic: 14.70
-  Big 12           : 13.97
-  Big Ten          : 11.98
-  Conference USA   : 12.11
-  Mid-American     : 13.77
-  Mountain West    : 14.44
-  Pac-12           : 15.81
-  SEC              : 17.54
-  Sun Belt         : 14.60
-
-Notable coefficient findings locked for model_07 review:
-  b_close_game_epa    : mean=0.347 — dominant predictor, no zero in HDI
-  b_pregame_elo       : mean=0.002, HDI includes zero — weak signal
-  b_off_sack_rate_allowed: mean=-0.013, HDI includes zero — weak signal
-  sigma_defense >> sigma_attack: between-team defensive heterogeneity
-    substantially larger than offensive; consistent with EPA covariates
-    absorbing offensive variance
-  rec_weight_sunbelt  : mean=-0.048, HDI (-0.092, -0.001) — constraint
-    active, posterior sitting against boundary
-
-Artifact saved: artifacts/model_06_samples.pkl
-  Contents: samples, idata, N_teams, N_CONFERENCES, team_to_idx,
-            conf_to_idx, CONFERENCES
-
-Pending at end of Day 25:
-  model_07_posterior_checks.ipynb — not built
-
----
+  Decision: model_08 is a combined refit + posterior check. All three
+  prior changes applied simultaneously. model_08 must pass all model_07
+  checks before evaluation notebooks proceed. Everything after model_07
+  shifts down one day.
 
 ## Day 24 — What Was Completed
 
@@ -132,14 +168,16 @@ model_04 re-run on corrected data (diagnostic only — 1 chain, 200
 warmup, 200 samples). All priors corrected before re-run (see locked
 decisions below). Results:
   0 divergences, acceptance 0.94, wall-clock 64.4s
-  sigma_attack posterior mean: 0.019 — low; watched in full 4-chain run
-  hfa_league posterior mean: 0.030 — below prior center 0.1; watched
+  r_negbinom posterior means: ACC/SEC ~17–18, Big Ten/CUSA ~12
+  sigma_attack posterior mean: 0.019 — low; watch in full 4-chain run
+  hfa_league posterior mean: 0.030 — below prior center 0.1; watch
   b_off_archetype shape: (200, 4) ✓  b_def_archetype shape: (200, 4) ✓
+  Full 4-chain run still pending — must complete before model_06.
 
 model_05_prior_predictive_checks.ipynb — all 5 cells complete and
 verified (plot saved and confirmed):
   90.4% within 0–70 pts — PASS (threshold recalibrated to 90%)
-  VMR deferred to model_07
+  VMR deferred to model_06
   Median score: 26 pts; overall mean: 40.48 pts; P99: 194 pts
   Per-sample mean range: 13.6–285.8 pts
   2/500 samples with per-sample mean > 200 — valid hierarchical behavior
@@ -155,6 +193,11 @@ RAG outlier flagging decision (locked):
       from the training distribution
   Navy and option-offense teams are primary candidates.
   Do not exclude these teams from training or prediction.
+
+Pending at end of Day 24:
+  model_06_full_fit.ipynb (num_warmup=1000, num_samples=1000, num_chains=4)
+  -- save samples to artifacts/model_06_samples.pkl
+  model_07_posterior_checks.ipynb -- not built
 
 ## Day 23 — What Was Completed
 - model_04_first_fit.ipynb audited and corrected — 6 cells:
@@ -173,6 +216,11 @@ RAG outlier flagging decision (locked):
   in earlier broken state — root causes now fixed)
 - Diagnostic run results: 0 divergences, acceptance prob=0.94,
   wall-clock 99.2s, 255 leapfrog steps
+- r_negbinom posterior means confirmed differentiated by conference:
+  ACC/SEC ~29, Big Ten/CUSA ~14–15 — validates conference-specific
+  dispersion structure
+- Items to watch in full 4-chain run: sigma_attack low (0.029),
+  hfa_league lower than prior center (0.029 vs 0.1)
 
 ## Day 22 — What Was Completed
 - model_03_feature_engineering.ipynb audited and corrected — 9 cells:
@@ -211,7 +259,7 @@ RAG outlier flagging decision (locked):
   - Cell 2: r_negbinom HalfNormal(5.0) scalar → Gamma(2.0, 0.1) x
     N_CONFERENCES vector
   - Cell 4: sp_weight YoY r corrected 0.7740→0.7632; HFA SD corrected
-    4.85→4.81; SP+ dual-role (prior seed + game-level spread predictor,
+    4.85→4.81; SP+ dual-role (prior seed + game-level predictor,
     partial r=0.197) documented
   - Cell 5: elo_sp_divergence comment corrected r=+0.1650→r=-0.1150
     (negative direction, z-score version); archetype scalars and compound
@@ -234,19 +282,20 @@ RAG outlier flagging decision (locked):
 | 22 | model_03_feature_engineering.ipynb | ✅ complete | Engineer all features not persisted after EDA. Write to int.int_game_model_features. All null handling, threshold-zeroing, and standardization applied here. |
 | 23 | model_04_first_fit_diagnostic.ipynb | ✅ complete (Day 23/24) | Diagnostic run only: 1 chain, 200 warmup, 200 samples. Confirms model geometry is healthy before full fit. 0 divergences, acceptance 0.94. |
 | 24 | model_05_prior_predictive_checks.ipynb | ✅ complete (Day 24) | Sample before seeing data. 90.4% within 0–70 pts [PASS]. VMR deferred to model_07. Plot saved: artifacts/model_05_prior_predictive.png. |
-| 25 | model_06_full_fit.ipynb | ✅ complete (Day 25) | Full 4-chain fit: 0 divergences, all R-hat < 1.01, all ESS >= 400. Artifact saved: artifacts/model_06_samples.pkl. |
-| 25 | model_07_posterior_checks.ipynb | ❌ not built | R-hat summary, trace plots, energy plots, ESS. VMR per conference (replaces retired prior predictive VMR threshold). Posterior predictive mean within ±2 pts per team. |
-| 26 | model_08_holdout_evaluation.ipynb | ❌ not built | First look at 2025 holdout. Overall Brier score, calibration curve. Baseline before subgroup breakouts. |
-| 27 | model_09_evaluation_by_conference_tier.ipynb | ❌ not built | Brier score and calibration by P4, G5, Independents. |
-| 28 | model_10_evaluation_by_game_type.ipynb | ❌ not built | Rivalry games, cross-tier matchups, neutral site games. Quantify how model handles upsets. |
-| 29 | model_11_evaluation_season_progression.ipynb | ❌ not built | Does calibration improve as season progresses? Conf game 1 vs conf game 8. |
-| 30 | model_12_home_away_spread_accuracy.ipynb | ❌ not built | Home field advantage calibration. Spread accuracy by expected margin. |
-| 31 | model_13_year_over_year_stability.ipynb | ❌ not built | Do 2023 model ratings predict 2024 performance? |
-| 32 | model_14_refinement.ipynb | ❌ not built | Adjust based on evaluation findings. May require revisiting priors, hierarchy, or dropping features. |
-| 33 | model_15_stress_testing.ipynb | ❌ not built | Edge cases: extreme weather, maximum travel, large timezone deltas, thin-data teams. |
-| 34 | model_16_signoff.ipynb | ❌ not built | Work through evaluation_checklist.md item by item. Model not signed off until every item addressed. |
+| 25 | model_06_full_fit.ipynb | ✅ complete (Day 25) | Full 4-chain fit. 0 divergences, all R-hat/ESS thresholds passed. Samples: artifacts/model_06_samples.pkl. |
+| 25 | model_07_posterior_checks.ipynb | ✅ complete (Day 25) | Posterior checks on model_06 samples. All convergence checks passed. Two structural findings: VMR gap and team-level mean compression. Refit required — see model_08. |
+| 26 | model_08_refit_and_posterior_checks.ipynb | ❌ not built — this is next | Refit with corrected priors (r_negbinom Gamma(4,0.5), sigma_attack/defense HalfNormal(0.25)) plus full posterior check suite. Both refit and checks must pass in this notebook. Save to artifacts/model_08_samples.pkl. |
+| 27 | model_09_holdout_evaluation.ipynb | ❌ not built (blocked on model_08) | First look at 2025 holdout. Overall Brier score, calibration curve. Baseline before subgroup breakouts. |
+| 28 | model_10_evaluation_by_conference_tier.ipynb | ❌ not built | Brier score and calibration by P4, G5, Independents. |
+| 29 | model_11_evaluation_by_game_type.ipynb | ❌ not built | Rivalry games, cross-tier matchups, neutral site games. Quantify how model handles upsets. |
+| 30 | model_12_evaluation_season_progression.ipynb | ❌ not built | Does calibration improve as season progresses? Conf game 1 vs conf game 8. |
+| 31 | model_13_home_away_spread_accuracy.ipynb | ❌ not built | Home field advantage calibration. Spread accuracy by expected margin. |
+| 32 | model_14_year_over_year_stability.ipynb | ❌ not built | Do 2023 model ratings predict 2024 performance? |
+| 33 | model_15_refinement.ipynb | ❌ not built | Adjust based on evaluation findings. May require revisiting priors, hierarchy, or dropping features. |
+| 34 | model_16_stress_testing.ipynb | ❌ not built | Edge cases: extreme weather, maximum travel, large timezone deltas, thin-data teams. |
+| 35 | model_17_signoff.ipynb | ❌ not built | Work through evaluation_checklist.md item by item. Model not signed off until every item addressed. |
 
-Gold layer begins Day 35.
+Gold layer begins Day 36.
 
 ---
 
@@ -336,27 +385,27 @@ Full specification in artifacts/prior_specification_draft.md.
 |---|---|---|
 | mu_league (intercept) | Normal(3.3, 0.2) | Log scale; exp(3.3) ≈ 27 pts |
 | hfa_league | Normal(0.1, 0.05) | Log scale; ≈ 2.43 pts on 27 pt baseline |
-| r_negbinom[c] | Gamma(16.0, 2.0) x N_CONFERENCES | Conference-specific vector; mean=8, std=2; 2-sigma lower bound ≈ r=4 |
+| r_negbinom[c] | Gamma(4.0, 0.5) x N_CONFERENCES | Conference-specific vector; mean=8, std=4. Gamma(16,2) caused VMR gap — posterior means 12-18 too high; observed VMR 4.8-7.2 requires r ≈ 5-8. Changed Day 25. |
 | mu_conference[c] | Normal(0.0, sigma_conference) x 10 | Centered; sigma_conference ~ HalfNormal(0.1) |
 | alpha_team_raw[t] | Normal(0.0, 1.0) x N_teams | Non-centered; alpha_team = raw * sigma_attack |
-| sigma_attack | HalfNormal(0.1) | Posterior mean 0.018 — team offensive effects near-pooled |
+| sigma_attack | HalfNormal(0.25) | HalfNormal(0.1) caused team-effect compression; 95/131 teams outside +-2 pt threshold. Changed Day 25. |
 | delta_team_raw[t] | Normal(0.0, 1.0) x N_teams | Non-centered; delta_team = raw * sigma_defense |
-| sigma_defense | HalfNormal(0.1) | Posterior mean 0.061 — 3x sigma_attack |
+| sigma_defense | HalfNormal(0.25) | Same rationale as sigma_attack. Changed Day 25. |
 | hfa_team_raw[t] | Normal(0.0, 1.0) x N_teams | Non-centered; hfa_team = raw * sigma_hfa_team |
-| sigma_hfa_team | HalfNormal(0.1) | Log scale; team HFA SD = 4.81 pts |
+| sigma_hfa_team | HalfNormal(0.1) | Log scale |
 | b_off_archetype | Normal(0.0, 0.15) x 4 | 4-vector embedding; indexed by off_archetype_idx |
 | b_def_archetype | Normal(0.0, 0.15) x 4 | 4-vector embedding; indexed by def_archetype_idx |
 | b_sp | Normal(0.0, 0.15) | Dual role: prior seed + game-level predictor |
-| b_elo | Normal(0.0, 0.15) | Posterior mean near zero; HDI includes zero |
+| b_elo | Normal(0.0, 0.15) | |
 | b_elo_sp_div | Normal(0.0, 0.15) | r=-0.1150 (negative direction); already z-scored |
-| b_epa_off | Normal(0.0, 0.10) | Posterior mean 0.347 — dominant predictor |
+| b_epa_off | Normal(0.0, 0.10) | Tighter — EPA features have stronger direct signal |
 | b_epa_def | Normal(0.0, 0.10) | |
 | b_elevation / b_travel / b_tz / b_wind | Normal(0.0, 0.15) | Environmental features |
 | b_last3_win / b_rush_std / b_rush_pass | Normal(0.0, 0.15) | Momentum/style features |
-| b_sack_off / b_sack_def | Normal(0.0, 0.15) | Posterior means near zero; HDIs include zero |
+| b_sack_off / b_sack_def | Normal(0.0, 0.15) | |
 | b_conf_scoped (6-vector) | Normal(0.0, 0.15) | Conference-scoped features |
 | rec_weight[c] | Normal(0.0, 0.5) x 9 | Non-Sun-Belt conferences |
-| rec_weight[Sun Belt] | TruncatedNormal(0.0, 0.5, high=0.0) | Hard non-positive constraint; posterior sitting against boundary |
+| rec_weight[Sun Belt] | TruncatedNormal(0.0, 0.5, high=0.0) | Hard non-positive constraint |
 
 **Hard constraint:** Sun Belt recruiting_3yr_avg coefficient must be non-positive.
 Implementation: TruncatedNormal(0.0, 0.5, high=0.0).
@@ -378,16 +427,19 @@ Implementation: TruncatedNormal(0.0, 0.5, high=0.0).
 
 ---
 
-## Evaluation Thresholds (from evaluation_checklist.md — Day 34 reference)
+## Evaluation Thresholds (from evaluation_checklist.md — Day 35 reference)
 - R-hat < 1.01 for all parameters
 - ESS_bulk >= 400 and ESS_tail >= 400 for all parameters
 - Zero divergences post-warmup
-- BFMI > 0.3 for all chains
+- BFMI > 0.3 for all chains — requires extra_fields=('energy',) at fit
+  time; not recoverable post-hoc; model_06 did not capture; model_08 must
 - Prior predictive: 90% of samples within 0–70 points (recalibrated from
   95% on Day 24 — 131-team hierarchy produces legitimate tail scores);
   VMR threshold retired from prior predictive (replaced by posterior
-  predictive VMR per conference in model_07)
-- Posterior predictive VMR per conference: evaluated in model_07
+  predictive VMR per conference in model_08)
+- Posterior predictive VMR per conference: observed VMR must fall inside
+  posterior predictive 90% CI per conference. All 10 conferences failed
+  in model_07 — this is the primary driver of the model_08 refit.
 - Posterior predictive mean within ±2 points of observed mean per team
 - Conference-level posterior predictive mean within ±3 points of observed
 - Overall Brier score must beat SP+-only baseline
@@ -409,15 +461,18 @@ Full 39-item checklist: artifacts/evaluation_checklist.md
 - Likelihood: Negative Binomial 2
 - Three-level hierarchy: league → conference → team
 - Dispersion: conference-specific vector r_negbinom of length N_CONFERENCES,
-  prior Gamma(16.0, 2.0) per conference independently (mean=8, std=2;
-  2-sigma lower bound ≈ r=4). EDA 05 confirmed this is required. Do not
-  revert to scalar. Do not revert to Gamma(2.0, 0.1) — caused sampler
-  collapse. Scalar HalfNormal(5.0) also caused sampler collapse.
+  prior Gamma(4.0, 0.5) per conference independently (mean=8, std=4).
+  Changed from Gamma(16.0, 2.0) on Day 25 — model_07 showed VMR gap:
+  posterior means 12-18 implied VMR 2.3-3.0; observed VMR 4.8-7.2.
+  Do not revert to scalar. Do not revert to Gamma(2.0, 0.1) or
+  Gamma(16.0, 2.0) — all caused sampler collapse or VMR failure.
+- sigma_attack: HalfNormal(0.25) — changed from HalfNormal(0.1) on Day 25.
+  model_07 showed 95/131 teams outside +-2 pt threshold; team effects
+  compressed toward league mean. Do not revert to HalfNormal(0.1).
+- sigma_defense: HalfNormal(0.25) — same rationale as sigma_attack.
+  Do not revert to HalfNormal(0.1).
 - sigma_conference: HalfNormal(0.1) — HalfNormal(3.0) caused exp(6)≈400x
   log-scale multipliers in prior predictive; do not revert
-- sigma_attack: HalfNormal(0.1) — HalfNormal(0.4) caused team-effect tail
-  explosions in prior predictive; do not revert
-- sigma_defense: HalfNormal(0.1) — same rationale as sigma_attack
 - All game-level coefficients: Normal(0, 0.15); b_epa_off and b_epa_def:
   Normal(0, 0.10); original widths (0.2–0.5) contributed to log_mu explosions
 - Winsorization caps (applied in model_03 Cell 7 only — never repeat
@@ -429,7 +484,7 @@ Full 39-item checklist: artifacts/evaluation_checklist.md
 - Prior predictive score threshold: 90% within 0–70 (recalibrated from 95%
   on Day 24 — 131-team hierarchy produces legitimate tail scores)
 - Prior predictive VMR threshold: retired — evaluated as posterior predictive
-  VMR per conference in model_07 instead
+  VMR per conference in model_06 instead
 - DB bulk insert: always execute_values(page_size=500); never executemany.
   Before Cell 8: check pg_stat_activity for idle-in-transaction sessions
   on int_game_model_features and terminate them.
@@ -493,9 +548,6 @@ Full 39-item checklist: artifacts/evaluation_checklist.md
 - Non-centered parameterization for team effects: *_raw ~ Normal(0,1) sampled;
   * = *_raw * sigma deterministic. Separates sigma geometry from team-effect
   geometry for NUTS.
-- model_06_samples.pkl contents: samples dict, idata (ArviZ InferenceData),
-  N_teams (131), N_CONFERENCES (10), team_to_idx, conf_to_idx, CONFERENCES.
-  Load with pickle. Do not re-run model_06 to regenerate — use the pkl.
 
 ---
 
@@ -602,7 +654,9 @@ def assign_tier(row):
 | artifacts/archetype_label_maps.json | KMeans archetype label maps (offense k=4, defense k=4) — written by model_03; auditability only, not used by model |
 | artifacts/scaler_stats.json | Mean and std for all 21 scaled features — written by model_03 Cell 7; required for prediction-time scaling; do not rewrite in downstream notebooks |
 | artifacts/model_05_prior_predictive.png | Prior predictive check plots — written by model_05 Cell 5 (Day 24) |
-| artifacts/model_06_samples.pkl | Full 4-chain posterior samples — complete (Day 25). Load with pickle. Contains: samples, idata, N_teams, N_CONFERENCES, team_to_idx, conf_to_idx, CONFERENCES. |
+| artifacts/model_06_samples.pkl | Full 4-chain posterior samples from model_06 (Day 25) — 78.7 MB. NOTE: energy not captured; BFMI not computable from this file. |
+| artifacts/model_07_trace_plots.png | Trace plots for sigma_attack, hfa_league, mu_league, r_negbinom[0,8] — written by model_07 Cell 3 (Day 25) |
+| artifacts/model_08_samples.pkl | Refit posterior samples — PENDING (written by model_08; must include energy array for BFMI) |
 
 Note: artifacts/archetype_matchup_encodings.json no longer exists —
 compound matchup encoding was eliminated in the audit. Do not reference it.
@@ -641,9 +695,6 @@ compound matchup encoding was eliminated in the audit. Do not reference it.
     a scalar. Never initialize it as a scalar in init_to_value.
 18. Archetype fields are always int32 index arrays (values 0–3). Never treat
     them as continuous float features. Never use compound matchup string columns.
-19. model_06_samples.pkl is the authoritative posterior. Load it at the start
-    of model_07 and every downstream notebook. Never re-run model_06 to
-    regenerate samples.
 
 ---
 
