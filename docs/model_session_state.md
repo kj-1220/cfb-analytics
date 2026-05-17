@@ -42,54 +42,91 @@ Python code blocks.
 
 ---
 
+## ⚠️ CRITICAL — Claude's Role In This Project
+
+Claude executes what the user directs. Claude does not introduce model
+components, architecture changes, or parameter structures that the user did
+not request. Claude does not iterate on its own initiative. When something
+fails, Claude stops and asks for direction. Claude does not suggest a path
+forward unless asked.
+
+Specific violations that occurred on Day 26 and must never recur:
+- alpha_team and delta_team were introduced without being requested. They
+  consumed the majority of Day 26 and added no predictive value.
+- When posterior checks failed, Claude iterated through 14 diagnostic cells
+  on its own initiative without direction.
+- Claude suggested moving to model_09 evaluation while the model was still
+  failing posterior checks.
+- Claude failed to audit int.int_game_model_features against final_features.csv
+  before building the model, resulting in four matchup features from
+  final_features.csv never being included in any model.
+
+---
+
 ## What Comes Next
 
-Next notebook: model_08_refit_and_posterior_checks.ipynb (Day 26)
+Next action: feature audit cell.
 
-model_08 is a combined refit and full posterior check in a single notebook.
-The refit uses corrected priors identified from model_07 findings. All
-posterior checks must pass in the same notebook before evaluation begins.
+A single cell that queries int.int_game_model_features and compares every
+column against every feature in final_features.csv. Output must show:
+- Every feature in final_features.csv and whether it exists in the database
+- Every column in int.int_game_model_features and whether it maps to a
+  feature in final_features.csv
+- Any column in the database not in final_features.csv
+- Any feature in final_features.csv not in the database
 
-Before writing any code, request these two notebooks from the user:
-  model_06_full_fit.ipynb
-  model_07_posterior_checks.ipynb
+Do not write any model code until the user has read the audit output and
+given direction. After the audit, the next notebook is determined by the
+user based on audit findings.
 
-Do not write a single cell until both are attached and read. The model
-definition in model_08 Cell 2 must be copied verbatim from model_06 Cell 2
-with only the three prior changes below. Do not reconstruct from memory.
+---
 
-Three priors changed from model_06 (change nothing else):
-  r_negbinom   : Gamma(16.0, 2.0) -> Gamma(4.0, 0.5)  [mean=8, std=4]
-  sigma_attack : HalfNormal(0.1)  -> HalfNormal(0.25)
-  sigma_defense: HalfNormal(0.1)  -> HalfNormal(0.25)
+## Day 26 — What Was Completed
 
-Rationale:
-  r_negbinom: model_07 showed all 10 conferences flagged on VMR check.
-  Posterior means 12-18 imply VMR 2.3-3.0; observed VMR 4.8-7.2. Prior
-  Gamma(16,2) too narrow — resisting low-r values data prefers (~5-8).
-  sigma_attack/defense: 95/131 teams outside +-2 pt mean threshold.
-  Posterior means 0.018/0.061 too small — team effects compressed toward
-  league mean. Elite teams under-predicted, weak teams over-predicted.
+model_08_refit_and_posterior_checks.ipynb — IN PROGRESS (Cells 1–14 run):
 
-Required checks in model_08 (all must pass before closing notebook):
-  R-hat < 1.01 for all parameters
-  ESS_bulk >= 400, ESS_tail >= 400 for all parameters
-  0 divergences
-  BFMI > 0.3 for all chains
-  Posterior predictive VMR: observed VMR inside 90% CI per conference
-  Team-level mean: predicted within +-2 pts of observed per team
-  Conference-level mean: predicted within +-3 pts of observed
+  Cells 1–8: refit complete and verified.
+    4 chains, 2000 warmup, 1000 samples. 0 divergences.
+    Wall-clock: 900.6s. Acceptance probs: 0.93/0.92/0.94/0.93.
+    All R-hat, ESS, BFMI convergence thresholds passed.
+    BFMI: 0.69/0.72/0.72/0.66 — all PASS.
+    Energy captured: extra_fields=('energy',) — BFMI recoverable.
+    Key posterior means:
+      mu_league: 3.1909  hfa_league: 0.0292  sp_weight: 0.0634
+      sigma_attack: 0.0239  sigma_defense: 0.0659
+      r_negbinom: ACC/SEC 23.5–23.8, Big Ten/CUSA 13.2–13.9
 
-BFMI requires capturing energy at fit time. Add to MCMC.run():
-  extra_fields=('energy',)
-And save in pkl:
-  artifact['energy'] = mcmc.get_extra_fields()['energy']
-model_06 did not capture energy — BFMI was not computable from that pkl.
-model_08 must not repeat this.
+  Cell 9: VMR check — FAILED all 10 conferences.
+    Observed VMR: 4.8–7.2. Posterior predictive CI: 1.7–2.6.
+    Root cause: NegBin2 cannot simultaneously fit team-level means and
+    conference-level variance at CFB score levels. Structural failure.
 
-Save samples to: artifacts/model_08_samples.pkl
+  Cells 10–14: diagnostic comparison run. Key findings:
 
-After model_08, the next notebook is model_09_holdout_evaluation.ipynb.
+    Finding 1 — Likelihood: Log-Normal confirmed as correct family.
+      log(points+1) ~ Normal(log_mu, sigma_obs[conf_idx]).
+      2.5x faster than NegBin2. No VMR constraint. 0 divergences.
+      This decision is locked. NegBin2 is dropped.
+
+    Finding 2 — alpha_team adds no predictive value.
+      sigma_attack collapses to ~0.025 regardless of prior or likelihood.
+      alpha_team is redundant given the feature set.
+      Team mean check does not improve with any intercept structure.
+      alpha_team and delta_team are removed unless user directs otherwise.
+
+    Finding 3 — Four matchup features from final_features.csv missing.
+      offense_archetype_matchup (eta²=0.3684 O/U)
+      defense_archetype_matchup (eta²=0.3901 O/U)
+      home_off_vs_away_def_matchup (eta²=0.2234 O/U)
+      away_off_vs_home_def_matchup (eta²=0.2328 O/U)
+      All four marked include in final_features.csv. None in any model.
+      Whether these exist in int.int_game_model_features is unknown.
+      Feature audit required before any further model work.
+
+  model_08 is NOT complete. Cannot be signed off until feature audit
+  is complete and model is rebuilt with correct complete feature set.
+
+---
 
 ## Day 25 — What Was Completed
 
@@ -146,6 +183,8 @@ model_07_posterior_checks.ipynb — complete (9 cells, all run and verified):
   checks before evaluation notebooks proceed. Everything after model_07
   shifts down one day.
 
+---
+
 ## Day 24 — What Was Completed
 
 model_03 Cell 7 rewrite — root cause of prior predictive explosions:
@@ -199,77 +238,89 @@ Pending at end of Day 24:
   -- save samples to artifacts/model_06_samples.pkl
   model_07_posterior_checks.ipynb -- not built
 
+---
+
 ## Day 23 — What Was Completed
-- model_04_first_fit.ipynb audited and corrected — 6 cells:
-  - Cell 1: imports, environment verification, DB connection
-  - Cell 2: conference index maps, GameData dataclass, model_cfb() —
+
+model_04_first_fit.ipynb audited and corrected — 6 cells:
+  Cell 1: imports, environment verification, DB connection
+  Cell 2: conference index maps, GameData dataclass, model_cfb() —
     corrected: r_negbinom Gamma(2.0, 0.1) vector x N_CONFERENCES,
     archetype embeddings (4-vector), compound matchup fields removed,
     non-centered team parameterization
-  - Cell 3: load training data from int.int_game_model_features
-  - Cell 4: build index arrays and conference masks
-  - Cell 5: construct GameData — corrected: no re-standardization
+  Cell 3: load training data from int.int_game_model_features
+  Cell 4: build index arrays and conference masks
+  Cell 5: construct GameData — corrected: no re-standardization
     (data already scaled by model_03), archetype fields as int32
-  - Cell 6: NUTS diagnostic run — corrected: r_negbinom init as vector,
+  Cell 6: NUTS diagnostic run — corrected: r_negbinom init as vector,
     archetype init as 4-vector zeros
-- Three diagnostic scratch cells removed (written to debug divergences
-  in earlier broken state — root causes now fixed)
-- Diagnostic run results: 0 divergences, acceptance prob=0.94,
-  wall-clock 99.2s, 255 leapfrog steps
-- r_negbinom posterior means confirmed differentiated by conference:
+Three diagnostic scratch cells removed (written to debug divergences
+in earlier broken state — root causes now fixed)
+Diagnostic run results: 0 divergences, acceptance prob=0.94,
+wall-clock 99.2s, 255 leapfrog steps
+r_negbinom posterior means confirmed differentiated by conference:
   ACC/SEC ~29, Big Ten/CUSA ~14–15 — validates conference-specific
   dispersion structure
-- Items to watch in full 4-chain run: sigma_attack low (0.029),
-  hfa_league lower than prior center (0.029 vs 0.1)
+Items to watch in full 4-chain run: sigma_attack low (0.029),
+hfa_league lower than prior center (0.029 vs 0.1)
+
+---
 
 ## Day 22 — What Was Completed
-- model_03_feature_engineering.ipynb audited and corrected — 9 cells:
-  - Cell 6: KMeans archetypes corrected — compound matchup string columns
+
+model_03_feature_engineering.ipynb audited and corrected — 9 cells:
+  Cell 6: KMeans archetypes corrected — compound matchup string columns
     removed; now produces off_archetype_idx and def_archetype_idx (int32,
     0–3) per team per game; archetype_matchup_encodings.json eliminated
-  - Cell 7: standardization pass added (continuous mean=0 std=1; sparse
+  Cell 7: standardization pass added (continuous mean=0 std=1; sparse
     divide by non-zero std only; elo_sp_divergence passthrough);
     elo_sp_divergence computed using locked EDA 08 parameters
     (elo mean=1511.6097 std=236.1207; sp mean=1.0969 std=12.8712);
     scaler_stats.json written
-  - Cell 8: table schema corrected — off_archetype_idx and def_archetype_idx
+  Cell 8: table schema corrected — off_archetype_idx and def_archetype_idx
     SMALLINT replacing four compound matchup SMALLINT columns
-  - Cell 9: validation updated — archetype range checks, compound column
+  Cell 9: validation updated — archetype range checks, compound column
     absence check
-- Key facts confirmed: 3,214 rows, 131 teams, 1,607 games, 31 columns,
-  all checks passed, elo_sp_divergence mean=-0.0001 std=0.449
+Key facts confirmed: 3,214 rows, 131 teams, 1,607 games, 31 columns,
+all checks passed, elo_sp_divergence mean=-0.0001 std=0.449
+
+---
 
 ## Day 21 — What Was Completed (audit corrections applied)
-- model_02_architecture.ipynb audited and corrected:
-  - Cell 4: GameData dataclass corrected — off_archetype_idx and
+
+model_02_architecture.ipynb audited and corrected:
+  Cell 4: GameData dataclass corrected — off_archetype_idx and
     def_archetype_idx (int32) replacing four float compound matchup fields
-  - Cell 5: model_cfb() corrected — r_negbinom Gamma(2.0, 0.1) vector x
+  Cell 5: model_cfb() corrected — r_negbinom Gamma(2.0, 0.1) vector x
     N_CONFERENCES; b_off_archetype and b_def_archetype as 4-vector
     embeddings; compound matchup scalars removed; likelihood uses
     r_negbinom[data.conf_idx]
-  - Cell 6: structural verification updated — int32 archetype index arrays,
+  Cell 6: structural verification updated — int32 archetype index arrays,
     r_negbinom shape assertion (5, 10), archetype shape assertions (5, 4),
     stale parameter name check
-  - All assertions passed: 0 divergences, correct shapes throughout
-- Original session: log-scale prior corrections applied to model_01 and
-  model_02 (mu_league, hfa_league, sigma_hfa_team)
+  All assertions passed: 0 divergences, correct shapes throughout
+Original session: log-scale prior corrections applied to model_01 and
+model_02 (mu_league, hfa_league, sigma_hfa_team)
+
+---
 
 ## Day 20 — What Was Completed (audit corrections applied)
-- model_01_prior_specification.ipynb audited and corrected:
-  - Cell 2: r_negbinom HalfNormal(5.0) scalar → Gamma(2.0, 0.1) x
+
+model_01_prior_specification.ipynb audited and corrected:
+  Cell 2: r_negbinom HalfNormal(5.0) scalar → Gamma(2.0, 0.1) x
     N_CONFERENCES vector
-  - Cell 4: sp_weight YoY r corrected 0.7740→0.7632; HFA SD corrected
+  Cell 4: sp_weight YoY r corrected 0.7740→0.7632; HFA SD corrected
     4.85→4.81; SP+ dual-role (prior seed + game-level predictor,
     partial r=0.197) documented
-  - Cell 5: elo_sp_divergence comment corrected r=+0.1650→r=-0.1150
+  Cell 5: elo_sp_divergence comment corrected r=+0.1650→r=-0.1150
     (negative direction, z-score version); archetype scalars and compound
     matchup columns replaced with b_off_archetype and b_def_archetype
     sample_shape=(4,)
-  - Cell 6: assembly cell corrected to match all above fixes; prior
+  Cell 6: assembly cell corrected to match all above fixes; prior
     predictive verified: 34 parameters, r_negbinom shape (1,10),
     b_off_archetype shape (1,4), Sun Belt=-0.3398
-  - Markdown summary updated: corrected intercept example, dispersion
-    section, archetype encoding contract, day references
+  Markdown summary updated: corrected intercept example, dispersion
+  section, archetype encoding contract, day references
 
 ---
 
@@ -284,7 +335,7 @@ Pending at end of Day 24:
 | 24 | model_05_prior_predictive_checks.ipynb | ✅ complete (Day 24) | Sample before seeing data. 90.4% within 0–70 pts [PASS]. VMR deferred to model_07. Plot saved: artifacts/model_05_prior_predictive.png. |
 | 25 | model_06_full_fit.ipynb | ✅ complete (Day 25) | Full 4-chain fit. 0 divergences, all R-hat/ESS thresholds passed. Samples: artifacts/model_06_samples.pkl. |
 | 25 | model_07_posterior_checks.ipynb | ✅ complete (Day 25) | Posterior checks on model_06 samples. All convergence checks passed. Two structural findings: VMR gap and team-level mean compression. Refit required — see model_08. |
-| 26 | model_08_refit_and_posterior_checks.ipynb | ❌ not built — this is next | Refit with corrected priors (r_negbinom Gamma(4,0.5), sigma_attack/defense HalfNormal(0.25)) plus full posterior check suite. Both refit and checks must pass in this notebook. Save to artifacts/model_08_samples.pkl. |
+| 26 | model_08_refit_and_posterior_checks.ipynb | ❌ in progress — blocked on feature audit | Refit with corrected likelihood (Log-Normal) and correct complete feature set from audit. Feature audit must complete first. Save to artifacts/model_08_samples.pkl. |
 | 27 | model_09_holdout_evaluation.ipynb | ❌ not built (blocked on model_08) | First look at 2025 holdout. Overall Brier score, calibration curve. Baseline before subgroup breakouts. |
 | 28 | model_10_evaluation_by_conference_tier.ipynb | ❌ not built | Brier score and calibration by P4, G5, Independents. |
 | 29 | model_11_evaluation_by_game_type.ipynb | ❌ not built | Rivalry games, cross-tier matchups, neutral site games. Quantify how model handles upsets. |
@@ -300,25 +351,24 @@ Gold layer begins Day 36.
 ---
 
 ## Model Architecture (locked)
+
 - Three-level hierarchy: league → conference → team
-- Likelihood: Negative Binomial 2
-- Model form: points ~ NegBinom2(mu, r), log(mu) = team_attack +
-  opponent_defense + home_advantage + environmental_adjusters +
-  game_level_features
-- Dispersion parameter r: VECTOR of length N_CONFERENCES, prior
-  Gamma(16.0, 2.0) per conference independently (mean=8, std=2). EDA 05
-  confirmed conference-specific dispersion (Bartlett p=0.000470, Levene
-  p=0.000705). Scalar r caused sampler collapse — do not revert to scalar.
-  Gamma(2.0, 0.1) also caused sampler collapse — do not revert.
-  Likelihood: r_negbinom[data.conf_idx] selects per-game dispersion.
+- Likelihood: Log-Normal. log(points+1) ~ Normal(log_mu, sigma_obs[conf_idx]).
+  NegBin2 dropped permanently on Day 26. Do not revert.
+- sigma_obs: HalfNormal(0.3) x N_CONFERENCES — one per conference.
+- alpha_team / delta_team: removed on Day 26. Features carry team quality
+  signal. Do not reintroduce without explicit user direction.
+- Model form: log(points+1) ~ Normal(log_mu, sigma_obs[conf_idx])
+  log_mu = league + conference + home_advantage + features
+- Dispersion parameter: sigma_obs replaces r_negbinom. NegBin2 dispersion
+  parameter is dropped with the likelihood.
 - Priors seeded from: sp_rating (team level, ALSO game-level spread
   predictor partial r=0.197), recruiting_3yr_avg (team level only)
 - pregame_elo: game-level predictor only, not a prior seed
-- Conference-level pooling provides regularization (ICC marginal 0.02–0.05
-  but pooling still improves small-sample estimates)
-- Built in NumPyro (replaces PyMC — see library decision below)
-- Non-centered parameterization for alpha_team, delta_team, hfa_team:
-  *_raw ~ Normal(0,1) sampled; * = *_raw * sigma deterministic
+- Conference-level pooling provides regularization
+- Built in NumPyro
+- Non-centered parameterization for hfa_team only:
+  hfa_team_raw ~ Normal(0,1); hfa_team = hfa_team_raw * sigma_hfa_team
 
 ---
 
@@ -376,6 +426,18 @@ The model indexes into 4-vector embeddings:
 `b_def_archetype[data.def_archetype_idx]`.
 No compound matchup string columns exist anywhere in the pipeline.
 
+### Matchup Features — Status Unknown (4)
+These four features appear in final_features.csv marked include but were
+never included in any model. Whether they exist in int.int_game_model_features
+is unknown. Feature audit required.
+
+| Feature | O/U eta² | Spread eta² | Notes |
+|---|---|---|---|
+| offense_archetype_matchup | 0.3684 | 0.0188 | Ambiguity 2 resolved: include |
+| defense_archetype_matchup | 0.3901 | 0.0213 | Ambiguity 2 resolved: include |
+| home_off_vs_away_def_matchup | 0.2234 | 0.0103 | Ambiguity 2 resolved: include |
+| away_off_vs_home_def_matchup | 0.2328 | — | Ambiguity 2 resolved: include |
+
 ---
 
 ## Prior Specification Summary
@@ -385,12 +447,8 @@ Full specification in artifacts/prior_specification_draft.md.
 |---|---|---|
 | mu_league (intercept) | Normal(3.3, 0.2) | Log scale; exp(3.3) ≈ 27 pts |
 | hfa_league | Normal(0.1, 0.05) | Log scale; ≈ 2.43 pts on 27 pt baseline |
-| r_negbinom[c] | Gamma(4.0, 0.5) x N_CONFERENCES | Conference-specific vector; mean=8, std=4. Gamma(16,2) caused VMR gap — posterior means 12-18 too high; observed VMR 4.8-7.2 requires r ≈ 5-8. Changed Day 25. |
+| sigma_obs[c] | HalfNormal(0.3) x N_CONFERENCES | Log-Normal residual SD per conference |
 | mu_conference[c] | Normal(0.0, sigma_conference) x 10 | Centered; sigma_conference ~ HalfNormal(0.1) |
-| alpha_team_raw[t] | Normal(0.0, 1.0) x N_teams | Non-centered; alpha_team = raw * sigma_attack |
-| sigma_attack | HalfNormal(0.25) | HalfNormal(0.1) caused team-effect compression; 95/131 teams outside +-2 pt threshold. Changed Day 25. |
-| delta_team_raw[t] | Normal(0.0, 1.0) x N_teams | Non-centered; delta_team = raw * sigma_defense |
-| sigma_defense | HalfNormal(0.25) | Same rationale as sigma_attack. Changed Day 25. |
 | hfa_team_raw[t] | Normal(0.0, 1.0) x N_teams | Non-centered; hfa_team = raw * sigma_hfa_team |
 | sigma_hfa_team | HalfNormal(0.1) | Log scale |
 | b_off_archetype | Normal(0.0, 0.15) x 4 | 4-vector embedding; indexed by off_archetype_idx |
@@ -440,6 +498,7 @@ Implementation: TruncatedNormal(0.0, 0.5, high=0.0).
 - Posterior predictive VMR per conference: observed VMR must fall inside
   posterior predictive 90% CI per conference. All 10 conferences failed
   in model_07 — this is the primary driver of the model_08 refit.
+  NOTE: VMR check replaced by log-variance check for Log-Normal likelihood.
 - Posterior predictive mean within ±2 points of observed mean per team
 - Conference-level posterior predictive mean within ±3 points of observed
 - Overall Brier score must beat SP+-only baseline
@@ -458,19 +517,11 @@ Full 39-item checklist: artifacts/evaluation_checklist.md
 ## Locked Decisions — Do Not Revisit
 - Library: NumPyro (PyMC abandoned due to pytensor environment failure)
 - pytensor: explicitly banned — do not install, import, or reference
-- Likelihood: Negative Binomial 2
-- Three-level hierarchy: league → conference → team
-- Dispersion: conference-specific vector r_negbinom of length N_CONFERENCES,
-  prior Gamma(4.0, 0.5) per conference independently (mean=8, std=4).
-  Changed from Gamma(16.0, 2.0) on Day 25 — model_07 showed VMR gap:
-  posterior means 12-18 implied VMR 2.3-3.0; observed VMR 4.8-7.2.
-  Do not revert to scalar. Do not revert to Gamma(2.0, 0.1) or
-  Gamma(16.0, 2.0) — all caused sampler collapse or VMR failure.
-- sigma_attack: HalfNormal(0.25) — changed from HalfNormal(0.1) on Day 25.
-  model_07 showed 95/131 teams outside +-2 pt threshold; team effects
-  compressed toward league mean. Do not revert to HalfNormal(0.1).
-- sigma_defense: HalfNormal(0.25) — same rationale as sigma_attack.
-  Do not revert to HalfNormal(0.1).
+- Likelihood: Log-Normal. log(points+1) ~ Normal(log_mu, sigma_obs[conf_idx]).
+  NegBin2 dropped permanently Day 26. Do not revert.
+- sigma_obs: HalfNormal(0.3) x N_CONFERENCES. Replaces r_negbinom.
+- alpha_team / delta_team: removed Day 26. Do not reintroduce without
+  explicit user direction.
 - sigma_conference: HalfNormal(0.1) — HalfNormal(3.0) caused exp(6)≈400x
   log-scale multipliers in prior predictive; do not revert
 - All game-level coefficients: Normal(0, 0.15); b_epa_off and b_epa_def:
@@ -483,15 +534,12 @@ Full 39-item checklist: artifacts/evaluation_checklist.md
     all continuous features : clipped to [-3, 3] after standardization
 - Prior predictive score threshold: 90% within 0–70 (recalibrated from 95%
   on Day 24 — 131-team hierarchy produces legitimate tail scores)
-- Prior predictive VMR threshold: retired — evaluated as posterior predictive
-  VMR per conference in model_06 instead
 - DB bulk insert: always execute_values(page_size=500); never executemany.
   Before Cell 8: check pg_stat_activity for idle-in-transaction sessions
   on int_game_model_features and terminate them.
 - RAG outlier flagging: flag predictions where team's off_archetype_idx is
   in cluster 3 (n=83), def_archetype_idx is in cluster 1 (n=505), any input
-  feature hit a winsorization cap at prediction time, or sigma_attack *
-  alpha_team_raw for either team exceeds 2 sigma from training distribution
+  feature hit a winsorization cap at prediction time
 - HFA: league-level baseline + team-level deviations; no conference-level HFA layer
 - SP+ dual role: prior seed AND game-level spread predictor (partial r=0.197
   after EPA control, p<0.0001, all conferences); does not decay monotonically
@@ -532,9 +580,9 @@ Full 39-item checklist: artifacts/evaluation_checklist.md
 - mu_league: Normal(3.3, 0.2) — log scale; exp(3.3) ≈ 27 pts
 - hfa_league: Normal(0.1, 0.05) — log scale; ≈ 2.43 pts on 27 pt baseline
 - sigma_hfa_team: HalfNormal(0.1) — log scale; team HFA SD = 4.81 pts
-- model_cfb() accepts GameData dataclass; N_teams passed at call time
+- model function accepts GameData dataclass; N_teams passed at call time
 - Conference-scope masking: build_conf_mask() builds binary float32 mask before
-  model_cfb() is called; one coefficient per scoped feature; masking handles
+  model function is called; one coefficient per scoped feature; masking handles
   zeroing — no separate priors per conference
 - close_game_epa_per_play / close_game_def_epa_per_play: null means no close-game
   situations occurred — treated as zero; applied in model_03
@@ -545,9 +593,7 @@ Full 39-item checklist: artifacts/evaluation_checklist.md
   do not repeat in downstream notebooks
 - scikit-learn installed in cfb_model_arm via:
   ~/miniforge3/bin/conda install -n cfb_model_arm scikit-learn -y
-- Non-centered parameterization for team effects: *_raw ~ Normal(0,1) sampled;
-  * = *_raw * sigma deterministic. Separates sigma geometry from team-effect
-  geometry for NUTS.
+- Non-centered parameterization for hfa_team only (alpha/delta removed Day 26)
 
 ---
 
@@ -645,7 +691,7 @@ def assign_tier(row):
 ## Artifacts — Active Reference Files
 | File | Notes |
 |---|---|
-| artifacts/final_features.csv | 23 included features with complete prior specs — authoritative feature list for model build |
+| artifacts/final_features.csv | 23 included features with complete prior specs — authoritative feature list for model build. Four matchup features confirmed present but not yet in any model — audit required. |
 | artifacts/master_verdict.csv | 93 rows — full EDA verdict record |
 | artifacts/prior_specification_draft.md | Day 20 input — translate into NumPyro code |
 | artifacts/evaluation_checklist.md | 39-item pass/fail checklist — Day 34 works through this |
@@ -656,7 +702,9 @@ def assign_tier(row):
 | artifacts/model_05_prior_predictive.png | Prior predictive check plots — written by model_05 Cell 5 (Day 24) |
 | artifacts/model_06_samples.pkl | Full 4-chain posterior samples from model_06 (Day 25) — 78.7 MB. NOTE: energy not captured; BFMI not computable from this file. |
 | artifacts/model_07_trace_plots.png | Trace plots for sigma_attack, hfa_league, mu_league, r_negbinom[0,8] — written by model_07 Cell 3 (Day 25) |
-| artifacts/model_08_samples.pkl | Refit posterior samples — PENDING (written by model_08; must include energy array for BFMI) |
+| artifacts/model_08_samples.pkl | Refit posterior samples — PENDING. Must use Log-Normal likelihood and correct complete feature set from audit. |
+| artifacts/model_08_trace_plots.png | Trace plots from model_08 Cell 8 (Day 26) |
+| artifacts/model_08_cell11_diagnostics.png | sigma_attack posterior histograms — written by model_08 Cell 11 (Day 26) |
 
 Note: artifacts/archetype_matchup_encodings.json no longer exists —
 compound matchup encoding was eliminated in the audit. Do not reference it.
@@ -691,10 +739,11 @@ compound matchup encoding was eliminated in the audit. Do not reference it.
     attempt to reconstruct it from memory or build a generic version.
 16. Do not re-standardize features loaded from int.int_game_model_features —
     all preprocessing was applied in model_03. Do not rewrite scaler_stats.json.
-17. r_negbinom is always a vector of length N_CONFERENCES. Never sample it as
-    a scalar. Never initialize it as a scalar in init_to_value.
-18. Archetype fields are always int32 index arrays (values 0–3). Never treat
+17. Archetype fields are always int32 index arrays (values 0–3). Never treat
     them as continuous float features. Never use compound matchup string columns.
+18. Claude executes what the user directs. Claude does not introduce model
+    components or iterate on its own initiative. When something fails, stop
+    and ask for direction.
 
 ---
 
