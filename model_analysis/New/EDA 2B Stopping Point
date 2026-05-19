@@ -1,0 +1,297 @@
+# EDA 2B — Session 1 Stopping Point
+*Written May 19, 2026*
+
+---
+
+## STOP — READ THIS BEFORE ANYTHING ELSE
+
+The correct rebuild pool counts are:
+- **Unique games: 1,729**
+- **Team-rows in int_game_team_features (filtered): 3,458**
+- **Team-seasons in int_team_season_features (filtered): 457**
+
+If your query returns a different number, your filter is wrong.
+Post the exact SQL you ran and stop. Do not generate alternative hypotheses.
+Do not write diagnostic cells. The filter below is correct. Your implementation is wrong.
+
+---
+
+## Purpose of EDA 2B
+
+EDA 2B builds all CTD performance features into `int_game_team_features`.
+This is the complete CTD engineering pass. Game script features are NOT built here —
+those are EDA 2C.
+
+There are NO season-level feature writes in this notebook. CTD is the predictor.
+Season-level values exist only as true priors (SP+, recruiting, archetypes) which
+are already written. Do not write any season-level performance metrics.
+
+---
+
+## Documents to Upload
+
+1. `model_rebuild_plan`
+2. `EDA_02_Feature_Inventory_A.ipynb`
+3. `EDA_02_Feature_Inventory_B.ipynb`
+4. This document
+
+Do not write any code until all four are read and summarized back.
+
+---
+
+## Canonical SQL Filter
+
+`int_game_team_features` has an `opponent` column. Use it directly.
+Do not use a CASE statement. Do not derive the opponent from raw.games.
+
+```sql
+FROM int.int_game_team_features f
+JOIN raw.games g
+    ON g.id = f.game_id
+JOIN int.int_team_season_features ts
+    ON ts.team_name = f.team_name AND ts.season = f.season
+JOIN int.int_team_season_features opp
+    ON opp.team_name = f.opponent AND opp.season = f.season
+WHERE g.season IN (2022, 2023, 2024, 2025)
+  AND g.conference_game = TRUE
+  AND g.week BETWEEN 5 AND 14
+  AND ts.conference  != 'FBS Independents'
+  AND opp.conference != 'FBS Independents'
+  AND ts.conference  != 'Pac-12'
+  AND opp.conference != 'Pac-12'
+  AND NOT (ts.conference  = 'American Athletic' AND g.season = 2022)
+  AND NOT (opp.conference = 'American Athletic' AND g.season = 2022)
+  AND NOT (ts.conference  = 'Mountain West'     AND g.season = 2022)
+  AND NOT (opp.conference = 'Mountain West'     AND g.season = 2022)
+  AND NOT (ts.conference  = 'Big 12'            AND g.season = 2022)
+  AND NOT (opp.conference = 'Big 12'            AND g.season = 2022)
+```
+
+When joining directly from raw.games without an f alias:
+
+```sql
+FROM raw.games g
+JOIN int.int_team_season_features ht
+    ON ht.team_name = g.home_team AND ht.season = g.season
+JOIN int.int_team_season_features at
+    ON at.team_name = g.away_team AND at.season = g.season
+WHERE g.season IN (2022, 2023, 2024, 2025)
+  AND g.conference_game = TRUE
+  AND g.week BETWEEN 5 AND 14
+  AND ht.conference != 'FBS Independents'
+  AND at.conference != 'FBS Independents'
+  AND ht.conference != 'Pac-12'
+  AND at.conference != 'Pac-12'
+  AND NOT (ht.conference = 'American Athletic' AND g.season = 2022)
+  AND NOT (at.conference = 'American Athletic' AND g.season = 2022)
+  AND NOT (ht.conference = 'Mountain West'     AND g.season = 2022)
+  AND NOT (at.conference = 'Mountain West'     AND g.season = 2022)
+  AND NOT (ht.conference = 'Big 12'            AND g.season = 2022)
+  AND NOT (at.conference = 'Big 12'            AND g.season = 2022)
+```
+
+---
+
+## DB Connection (Canonical)
+
+```python
+import psycopg2
+import pandas as pd
+import numpy as np
+
+RANDOM_SEED = 42
+TRAIN_SEASONS = [2022, 2023, 2024, 2025]
+TEST_SIZE = 0.20
+CONFERENCE_GAMES_ONLY = True
+EXCLUDE_INDEPENDENTS = True
+
+conn = psycopg2.connect(
+    host='127.0.0.1', port=5455, dbname='postgres',
+    user='postgres', password='postgres'
+)
+cur = conn.cursor()
+```
+
+---
+
+## Session Rules
+
+- Label every cell: KEEP / DIAGNOSTIC / DRY RUN / WRITE
+- One cell at a time — wait for output before writing the next
+- Every assertion scoped to rebuild pool — never against full table
+- No WRITE cell without a preceding DRY RUN cell
+- No WRITE cell without explicit confirmation
+- RANDOM_SEED = 42 everywhere
+- Cast all Decimal columns to float64 immediately after loading
+
+---
+
+## Known Schema Facts
+
+- `int_game_team_features` has an `opponent` column — use it directly
+- `conference` is NOT in `int_game_team_features` — join to `int_team_season_features`
+- `is_home` is NOT in `int_game_team_features` — derive via join to `raw.games`
+- `int_game_environment` uses `home_team` / `away_team` not `team_name`
+- All numeric columns from psycopg2 return as Decimal — cast to float64 immediately
+- Boolean columns: `.map(lambda x: 1 if x is True else (0 if x is False else np.nan)).astype(float)`
+- `int_game_team_features` granularity: two rows per game (one per team)
+- `sp_rating` and `conference`: authoritative source is `int_team_season_features`
+- EPA in `raw.plays` is named `ppa`
+- Score differential in `raw.plays`: `offense_score - defense_score` (from offense perspective)
+- Quarter in `raw.plays` is named `period`
+- `int_game_model_features`: condemned — do not use, do not reference
+- Pac-12: G5 for all seasons (post-realignment)
+- Notre Dame: P4 — route by team name not conference label
+- UConn: G5 — route by team name not conference label
+
+---
+
+## raw.plays Play Type Classifications (Locked)
+
+**Rush plays:** `play_type = 'Rush'`
+
+**Pass plays:**
+```
+'Pass Reception', 'Pass Incompletion', 'Passing Touchdown',
+'Sack', 'Pass Interception Return', 'Pass Completion',
+'Two Point Pass', 'Pass'
+```
+
+**Interceptions (offense threw):**
+```
+'Interception', 'Pass Interception Return', 'Interception Return Touchdown'
+```
+
+**Fumbles lost (offense):**
+```
+'Fumble Recovery (Opponent)', 'Fumble Return Touchdown'
+```
+
+Bare `Fumble` (115 plays total) excluded — too ambiguous to assign.
+
+**Standard downs:** down=1, OR (down=2 AND distance<=7), OR (down=3 AND distance<=4), OR (down=4 AND distance<=4)
+
+**Pass downs:** (down=2 AND distance>=8), OR (down=3 AND distance>=5), OR (down=4 AND distance>=5)
+
+---
+
+## What Is Completed in EDA 2B So Far
+
+**Cell 1 — markdown — game_script_design.md reference**
+
+**Cell 2 (exec 50) — DIAGNOSTIC — Full Column Inventory**
+Full column list for all int tables and raw.plays. Row counts confirmed.
+Do not re-run unless schema has changed.
+
+**Cell 3 (exec 51) — DIAGNOSTIC — Sack Column Diagnostic**
+`sacks` in `int_team_season_features` = defensive sacks generated (season total).
+`pass_attempts` in `int_team_season_features` = offensive pass attempts.
+
+**Cell 4 (exec 52) — DIAGNOSTIC — raw.plays play_type Distribution**
+Full play_type distribution confirmed. Classifications locked above.
+
+**Cell 5 (exec 53) — DIAGNOSTIC — TFL Back-Calculation Check**
+TFL back-calculation from raw.plays captures only 35-97% depending on team.
+Cannot reliably derive TFL from raw.plays. Sack rate uses raw.plays `Sack`
+play type directly — this is reliable (22,486 plays, clean play type).
+
+**Cell 6 (exec 56) — KEEP — Rebuild Pool Assertion**
+Currently has wrong assertion value (3,440). Must be corrected to 3,458 before
+proceeding. Corrected cell script:
+
+```python
+# CELL 5 — KEEP — Rebuild Pool Assertion
+
+cur.execute("""
+    SELECT COUNT(*)
+    FROM int.int_game_team_features f
+    JOIN raw.games g ON g.id = f.game_id
+    JOIN int.int_team_season_features ts
+        ON ts.team_name = f.team_name AND ts.season = f.season
+    JOIN int.int_team_season_features opp
+        ON opp.team_name = f.opponent AND opp.season = f.season
+    WHERE g.season IN (2022, 2023, 2024, 2025)
+      AND g.conference_game = TRUE
+      AND g.week BETWEEN 5 AND 14
+      AND ts.conference  != 'FBS Independents'
+      AND opp.conference != 'FBS Independents'
+      AND ts.conference  != 'Pac-12'
+      AND opp.conference != 'Pac-12'
+      AND NOT (ts.conference  = 'American Athletic' AND g.season = 2022)
+      AND NOT (opp.conference = 'American Athletic' AND g.season = 2022)
+      AND NOT (ts.conference  = 'Mountain West'     AND g.season = 2022)
+      AND NOT (opp.conference = 'Mountain West'     AND g.season = 2022)
+      AND NOT (ts.conference  = 'Big 12'            AND g.season = 2022)
+      AND NOT (opp.conference = 'Big 12'            AND g.season = 2022)
+""")
+n_rows = cur.fetchone()[0]
+assert n_rows == 3458, f"Expected 3,458 team-rows, got {n_rows}"
+print(f"Team-rows in rebuild pool: {n_rows:,} — OK")
+
+cur.execute("""
+    SELECT COUNT(*)
+    FROM int.int_team_season_features
+    WHERE season IN (2022, 2023, 2024, 2025)
+      AND conference != 'FBS Independents'
+      AND conference != 'Pac-12'
+      AND NOT (conference = 'American Athletic' AND season = 2022)
+      AND NOT (conference = 'Mountain West'     AND season = 2022)
+      AND NOT (conference = 'Big 12'            AND season = 2022)
+""")
+n_ts = cur.fetchone()[0]
+assert n_ts == 457, f"Expected 457 team-seasons, got {n_ts}"
+print(f"Team-seasons in rebuild pool: {n_ts:,} — OK")
+
+print("\nRebuild pool assertions passed. Ready to build CTD features.")
+```
+
+---
+
+## What Remains to Be Built in EDA 2B
+
+All features written to `int_game_team_features` as CTD columns.
+All assertions use 3,458 team-rows and 457 team-seasons.
+CTD = cumulative average through prior games in season (Game N uses Games 1 through N-1).
+
+### From raw.plays
+
+**Rush rate by down type:**
+- `rush_rate_std_downs_ctd`
+- `rush_rate_pass_downs_ctd`
+
+**Sack rate:**
+- `off_sack_rate_ctd` — Sack plays allowed per offensive pass attempt
+- `def_sack_rate_ctd` — Sack plays generated per opponent pass attempt
+
+**Turnover rates (6 features):**
+- `off_int_rate_ctd` — (Interception + Pass Interception Return + Interception Return Touchdown) per offensive pass attempt
+- `off_fumble_lost_rate_ctd` — (Fumble Recovery (Opponent) + Fumble Return Touchdown) per offensive rush attempt
+- `off_turnover_rate_ctd` — all turnovers lost per total offensive plays
+- `def_int_rate_ctd` — interceptions forced per opponent pass attempt
+- `def_fumble_forced_rate_ctd` — fumbles forced per opponent rush attempt
+- `def_turnover_rate_ctd` — all turnovers forced per total opponent plays
+
+### From existing int_game_team_features game-level columns
+
+- `close_game_off_epa_ctd` (from `close_game_epa_per_play`)
+- `close_game_def_epa_ctd` (from `close_game_def_epa_per_play`)
+- `close_game_play_count_ctd` (from `close_game_play_count`)
+- `close_game_def_play_count_ctd` (from `close_game_def_play_count`)
+
+### CTD versions of performance metrics sourced from int_team_season_features
+
+These are CTD columns built into `int_game_team_features`. Not season-level writes.
+
+- `off_epa_per_play_ctd` / `def_epa_per_play_ctd`
+- `off_explosiveness_ctd` / `def_explosiveness_ctd`
+- `off_success_rate_ctd` / `def_success_rate_ctd`
+- `off_std_downs_success_rate_ctd` / `def_std_downs_success_rate_ctd`
+- `off_pass_downs_success_rate_ctd` / `def_pass_downs_success_rate_ctd`
+- `off_std_downs_sr_delta_ctd` (std_downs minus pass_downs, offense)
+- `def_std_downs_sr_delta_ctd` (std_downs minus pass_downs, defense)
+- Havoc / stuff / line yards / power success — audit first, build if data supports
+
+### Last cell
+
+Partial `candidate_features.csv` — all features except game script.
+Game script candidates added in EDA 2C.

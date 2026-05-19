@@ -1,0 +1,253 @@
+# EDA 2C — Handoff Prompt
+*Written May 19, 2026*
+
+---
+
+## STOP — READ THIS BEFORE ANYTHING ELSE
+
+The correct rebuild pool counts are:
+- **Unique games: 1,729**
+- **Team-rows in int_game_team_features (filtered): 3,458**
+- **Team-seasons in int_team_season_features (filtered): 457**
+
+If your query returns a different number, your filter is wrong.
+Post the exact SQL you ran and stop. Do not generate alternative hypotheses.
+Do not write diagnostic cells. The filter below is correct. Your implementation is wrong.
+
+---
+
+## Purpose of EDA 2C
+
+EDA 2C builds game script features only. The design is fully locked in
+`game_script_design.md`. There is no design conversation in this session.
+Execute against the spec. Nothing else.
+
+There are NO season-level feature writes in this notebook except
+`gs_neutral_pct_volatility` into `int_team_season_features`.
+All other features go into `int_game_team_features` as CTD columns.
+
+---
+
+## Documents to Upload
+
+1. `model_rebuild_plan`
+2. `EDA_02_Feature_Inventory_A.ipynb`
+3. `EDA_02_Feature_Inventory_B.ipynb` (completed)
+4. `game_script_design.md`
+5. `EDA_2B_stopping_point.md`
+
+Do not write any code until all five are read and summarized back.
+
+---
+
+## Canonical SQL Filter
+
+`int_game_team_features` has an `opponent` column. Use it directly.
+Do not use a CASE statement. Do not derive the opponent from raw.games.
+
+```sql
+FROM int.int_game_team_features f
+JOIN raw.games g
+    ON g.id = f.game_id
+JOIN int.int_team_season_features ts
+    ON ts.team_name = f.team_name AND ts.season = f.season
+JOIN int.int_team_season_features opp
+    ON opp.team_name = f.opponent AND opp.season = f.season
+WHERE g.season IN (2022, 2023, 2024, 2025)
+  AND g.conference_game = TRUE
+  AND g.week BETWEEN 5 AND 14
+  AND ts.conference  != 'FBS Independents'
+  AND opp.conference != 'FBS Independents'
+  AND ts.conference  != 'Pac-12'
+  AND opp.conference != 'Pac-12'
+  AND NOT (ts.conference  = 'American Athletic' AND g.season = 2022)
+  AND NOT (opp.conference = 'American Athletic' AND g.season = 2022)
+  AND NOT (ts.conference  = 'Mountain West'     AND g.season = 2022)
+  AND NOT (opp.conference = 'Mountain West'     AND g.season = 2022)
+  AND NOT (ts.conference  = 'Big 12'            AND g.season = 2022)
+  AND NOT (opp.conference = 'Big 12'            AND g.season = 2022)
+```
+
+When joining directly from raw.games without an f alias:
+
+```sql
+FROM raw.games g
+JOIN int.int_team_season_features ht
+    ON ht.team_name = g.home_team AND ht.season = g.season
+JOIN int.int_team_season_features at
+    ON at.team_name = g.away_team AND at.season = g.season
+WHERE g.season IN (2022, 2023, 2024, 2025)
+  AND g.conference_game = TRUE
+  AND g.week BETWEEN 5 AND 14
+  AND ht.conference != 'FBS Independents'
+  AND at.conference != 'FBS Independents'
+  AND ht.conference != 'Pac-12'
+  AND at.conference != 'Pac-12'
+  AND NOT (ht.conference = 'American Athletic' AND g.season = 2022)
+  AND NOT (at.conference = 'American Athletic' AND g.season = 2022)
+  AND NOT (ht.conference = 'Mountain West'     AND g.season = 2022)
+  AND NOT (at.conference = 'Mountain West'     AND g.season = 2022)
+  AND NOT (ht.conference = 'Big 12'            AND g.season = 2022)
+  AND NOT (at.conference = 'Big 12'            AND g.season = 2022)
+```
+
+---
+
+## DB Connection (Canonical)
+
+```python
+import psycopg2
+import pandas as pd
+import numpy as np
+
+RANDOM_SEED = 42
+TRAIN_SEASONS = [2022, 2023, 2024, 2025]
+TEST_SIZE = 0.20
+CONFERENCE_GAMES_ONLY = True
+EXCLUDE_INDEPENDENTS = True
+
+conn = psycopg2.connect(
+    host='127.0.0.1', port=5455, dbname='postgres',
+    user='postgres', password='postgres'
+)
+cur = conn.cursor()
+```
+
+---
+
+## Session Rules
+
+- Label every cell: KEEP / DIAGNOSTIC / DRY RUN / WRITE
+- One cell at a time — wait for output before writing the next
+- Every assertion scoped to rebuild pool — never against full table
+- No WRITE cell without a preceding DRY RUN cell
+- No WRITE cell without explicit confirmation
+- RANDOM_SEED = 42 everywhere
+- Cast all Decimal columns to float64 immediately after loading
+
+---
+
+## Known Schema Facts
+
+- `int_game_team_features` has an `opponent` column — use it directly
+- `conference` is NOT in `int_game_team_features` — join to `int_team_season_features`
+- `is_home` is NOT in `int_game_team_features` — derive via join to `raw.games`
+- All numeric columns from psycopg2 return as Decimal — cast to float64 immediately
+- EPA in `raw.plays` is named `ppa`
+- Score differential in `raw.plays`: `offense_score - defense_score` (offense perspective)
+- Quarter in `raw.plays` is named `period`
+- `int_game_model_features`: condemned — do not use, do not reference
+- Pac-12: G5 for all seasons (post-realignment)
+- Notre Dame: P4 — route by team name not conference label
+- UConn: G5 — route by team name not conference label
+
+---
+
+## raw.plays Play Type Classifications
+
+**Rush plays:** `play_type = 'Rush'`
+
+**Pass plays:**
+```
+'Pass Reception', 'Pass Incompletion', 'Passing Touchdown',
+'Sack', 'Pass Interception Return', 'Pass Completion',
+'Two Point Pass', 'Pass'
+```
+
+---
+
+## Game Script Bucket Definitions
+
+Score differential = `offense_score - defense_score` from the perspective of the
+team whose features are being computed. Positive = leading, negative = trailing.
+
+| Bucket | Score differential |
+|---|---|
+| Neutral | Within ±10 |
+| Ahead | Leading 11–20 |
+| Blowout lead | Leading 21+ |
+| Behind | Trailing 11–20 |
+| Blowout deficit | Trailing 21+ |
+
+**Garbage time filter:** Leading 28+ in Q4 (period=4). Excluded from all buckets.
+Not a feature bucket — a filter only.
+
+---
+
+## Metrics Per Bucket
+
+| Metric | Neutral | Ahead | Blowout lead | Behind | Blowout deficit |
+|---|---|---|---|---|---|
+| Play count | ✓ | ✓ | ✓ | ✓ | ✓ |
+| EPA per play (off) | ✓ | ✓ | — | ✓ | ✓ |
+| EPA per play (def) | ✓ | ✓ | — | ✓ | ✓ |
+| Rush rate | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Pct of total plays | ✓ | ✓ | ✓ | ✓ | ✓ |
+
+---
+
+## Columns to Be Written
+
+### int_game_team_features — 24 new CTD columns
+
+```
+gs_neutral_plays_ctd
+gs_neutral_off_epa_ctd
+gs_neutral_def_epa_ctd
+gs_neutral_rush_rate_ctd
+gs_neutral_pct_ctd
+
+gs_ahead_plays_ctd
+gs_ahead_off_epa_ctd
+gs_ahead_def_epa_ctd
+gs_ahead_rush_rate_ctd
+gs_ahead_pct_ctd
+
+gs_blowout_lead_plays_ctd
+gs_blowout_lead_rush_rate_ctd
+gs_blowout_lead_pct_ctd
+
+gs_behind_plays_ctd
+gs_behind_off_epa_ctd
+gs_behind_def_epa_ctd
+gs_behind_rush_rate_ctd
+gs_behind_pct_ctd
+
+gs_blowout_deficit_plays_ctd
+gs_blowout_deficit_off_epa_ctd
+gs_blowout_deficit_def_epa_ctd
+gs_blowout_deficit_rush_rate_ctd
+gs_blowout_deficit_pct_ctd
+```
+
+### int_team_season_features — 1 new season-level column
+
+```
+gs_neutral_pct_volatility
+```
+
+Standard deviation of neutral-play percentage across games within a season.
+One value per team-season.
+
+---
+
+## CTD Construction
+
+Game N uses the cumulative average of Games 1 through N-1 within the same season,
+ordered by week. Week 5 is the first prediction window game — teams will have 1-4
+prior games of CTD data. This is expected behavior.
+
+---
+
+## First Cell of This Notebook
+
+Rebuild pool assertion — must return 3,458 team-rows and 457 team-seasons.
+Use the canonical filter above. Do not proceed until this passes.
+
+---
+
+## Last Cell of This Notebook
+
+Add game script candidates to `candidate_features.csv` using flags from
+`game_script_design.md`. Produce the final complete version of
+`candidate_features.csv` covering all features built across EDA 2A, 2B, and 2C.
